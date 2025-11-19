@@ -1,0 +1,18 @@
+{
+  "name": "@sigls/database",
+  "version": "1.0.0",
+  "description": "Prisma database schema and client for SIGLS",
+  "main": "index.js",
+  "scripts": {
+    "prisma:generate": "dotenv -e ../../.env -- prisma generate",
+    "prisma:migrate": "dotenv -e ../../.env -- prisma migrate dev",
+    "prisma:studio": "dotenv -e ../../.env -- prisma studio",
+    "prisma:deploy": "dotenv -e ../../.env -- prisma migrate deploy"
+  },
+  "dependencies": {
+    "@prisma/client": "^5.7.0"
+  },
+  "devDependencies": {
+    "prisma": "^5.7.0"
+  }
+}

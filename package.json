@@ -1,0 +1,39 @@
+{
+  "name": "sigls-monorepo",
+  "version": "1.0.0",
+  "description": "Sistema de Gerenciamento de Locais de Saúde de Corumbá (MS)",
+  "private": true,
+  "workspaces": [
+    "packages/*",
+    "apps/*"
+  ],
+  "scripts": {
+    "dev:api": "npm run dev --workspace=@sigls/api",
+    "dev:worker": "npm run dev --workspace=@sigls/etl-worker",
+    "dev:web": "npm run dev --workspace=@sigls/web",
+    "build:api": "npm run build --workspace=@sigls/api",
+    "build:worker": "npm run build --workspace=@sigls/etl-worker",
+    "build:web": "npm run build --workspace=@sigls/web",
+    "prisma:generate": "npm run prisma:generate --workspace=@sigls/database",
+    "prisma:migrate": "npm run prisma:migrate --workspace=@sigls/database",
+    "prisma:studio": "npm run prisma:studio --workspace=@sigls/database",
+    "prisma:triggers": "node scripts/apply-triggers.js",
+    "setup:db": "npm run prisma:migrate && npm run prisma:triggers",
+    "create:superadmin": "node scripts/create-superadmin.js"
+  },
+  "keywords": [
+    "health",
+    "gis",
+    "etl",
+    "corumba"
+  ],
+  "author": "Prefeitura de Corumbá",
+  "license": "MIT",
+  "devDependencies": {
+    "cross-env": "^10.1.0",
+    "dotenv-cli": "^11.0.0"
+  },
+  "dependencies": {
+    "mysql2": "^3.15.3"
+  }
+}

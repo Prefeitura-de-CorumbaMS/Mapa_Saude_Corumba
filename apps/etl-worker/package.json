@@ -1,0 +1,22 @@
+{
+  "name": "@sigls/etl-worker",
+  "version": "1.0.0",
+  "description": "SIGLS ETL Worker - Extract, Transform, Load",
+  "main": "src/index.js",
+  "scripts": {
+    "dev": "nodemon src/index.js",
+    "start": "node src/index.js",
+    "build": "echo 'No build step needed for Node.js'"
+  },
+  "dependencies": {
+    "@sigls/database": "*",
+    "@sigls/shared": "*",
+    "@sigls/logger": "*",
+    "dotenv": "^16.3.1",
+    "node-cron": "^3.0.3",
+    "pg": "^8.11.3"
+  },
+  "devDependencies": {
+    "nodemon": "^3.0.2"
+  }
+}

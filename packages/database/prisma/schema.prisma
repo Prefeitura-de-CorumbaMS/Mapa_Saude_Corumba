@@ -1,0 +1,213 @@
+// SIGLS - Sistema de Gerenciamento de Locais de Saúde de Corumbá (MS)
+// Prisma Schema Definition
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "mysql"
+  url      = env("DATABASE_URL")
+}
+
+// ============================================================================
+// STAGING TABLES - Dados brutos da fonte de saúde
+// ============================================================================
+
+model STAGING_Info_Origem {
+  id                     Int                      @id @default(autoincrement())
+  nome_medico_bruto      String?                  @db.VarChar(255)
+  nome_unidade_bruto     String?                  @db.VarChar(255)
+  nome_especialidade_bruto String?                @db.VarChar(255)
+  id_origem              String                   @unique @db.VarChar(100)
+  status_processamento   StatusProcessamento      @default(pendente)
+  id_prod_link           Int?                     // FK opcional para rastreamento
+  created_at             DateTime                 @default(now())
+  updated_at             DateTime                 @updatedAt
+  
+  // Campos adicionais para enriquecimento manual
+  nome_familiar          String?                  @db.VarChar(255)
+  endereco_manual        String?                  @db.VarChar(500)
+  latitude_manual        Decimal?                 @db.Decimal(10, 8)
+  longitude_manual       Decimal?                 @db.Decimal(11, 8)
+  observacoes            String?                  @db.Text
+  
+  @@index([status_processamento])
+  @@index([id_origem])
+  @@map("STAGING_Info_Origem")
+}
+
+enum StatusProcessamento {
+  pendente
+  validado
+  erro
+  ignorado
+}
+
+// ============================================================================
+// PRODUCTION TABLES - Dados limpos e validados
+// ============================================================================
+
+model PROD_Unidade_Saude {
+  id                Int                              @id @default(autoincrement())
+  nome              String                           @db.VarChar(255)
+  endereco          String?                          @db.VarChar(500)
+  latitude          Decimal                          @db.Decimal(10, 8) // NOT NULL - obrigatório para mapa
+  longitude         Decimal                          @db.Decimal(11, 8) // NOT NULL - obrigatório para mapa
+  id_origem         String                           @unique @db.VarChar(100)
+  ativo             Boolean                          @default(true)
+  created_at        DateTime                         @default(now())
+  updated_at        DateTime                         @updatedAt
+  
+  // Relações
+  especialidades    Junction_Unidade_Especialidade[]
+  
+  @@index([ativo])
+  @@index([latitude, longitude])
+  @@map("PROD_Unidade_Saude")
+}
+
+model PROD_Medico {
+  id                Int                              @id @default(autoincrement())
+  nome              String                           @db.VarChar(255)
+  id_origem         String                           @unique @db.VarChar(100)
+  ativo             Boolean                          @default(true)
+  created_at        DateTime                         @default(now())
+  updated_at        DateTime                         @updatedAt
+  
+  // Relações
+  especialidades    Junction_Medico_Especialidade[]
+  
+  @@index([ativo])
+  @@map("PROD_Medico")
+}
+
+model PROD_Especialidade {
+  id                Int                              @id @default(autoincrement())
+  nome              String                           @unique @db.VarChar(255)
+  ativo             Boolean                          @default(true)
+  created_at        DateTime                         @default(now())
+  updated_at        DateTime                         @updatedAt
+  
+  // Relações
+  unidades          Junction_Unidade_Especialidade[]
+  medicos           Junction_Medico_Especialidade[]
+  
+  @@index([ativo])
+  @@map("PROD_Especialidade")
+}
+
+// ============================================================================
+// JUNCTION TABLES - Relações N:N
+// ============================================================================
+
+model Junction_Unidade_Especialidade {
+  id_unidade        Int
+  id_especialidade  Int
+  created_at        DateTime                         @default(now())
+  
+  unidade           PROD_Unidade_Saude               @relation(fields: [id_unidade], references: [id], onDelete: Cascade)
+  especialidade     PROD_Especialidade               @relation(fields: [id_especialidade], references: [id], onDelete: Cascade)
+  
+  @@id([id_unidade, id_especialidade])
+  @@map("Junction_Unidade_Especialidade")
+}
+
+model Junction_Medico_Especialidade {
+  id_medico         Int
+  id_especialidade  Int
+  created_at        DateTime                         @default(now())
+  
+  medico            PROD_Medico                      @relation(fields: [id_medico], references: [id], onDelete: Cascade)
+  especialidade     PROD_Especialidade               @relation(fields: [id_especialidade], references: [id], onDelete: Cascade)
+  
+  @@id([id_medico, id_especialidade])
+  @@map("Junction_Medico_Especialidade")
+}
+
+// ============================================================================
+// USER MANAGEMENT - Sistema de usuários e RBAC
+// ============================================================================
+
+model User {
+  id                Int                              @id @default(autoincrement())
+  username          String                           @unique @db.VarChar(50)
+  email             String                           @unique @db.VarChar(255)
+  password_hash     String                           @db.VarChar(255)
+  role              UserRole                         @default(admin)
+  ativo             Boolean                          @default(true)
+  created_at        DateTime                         @default(now())
+  updated_at        DateTime                         @updatedAt
+  last_login        DateTime?
+  
+  // Relações
+  audit_logs        AUDIT_LOG[]
+  
+  @@index([username])
+  @@index([email])
+  @@index([role])
+  @@map("User")
+}
+
+enum UserRole {
+  admin
+  superadmin
+}
+
+// ============================================================================
+// AUDIT SYSTEM - Sistema de auditoria imutável
+// ============================================================================
+
+model AUDIT_LOG {
+  id                Int                              @id @default(autoincrement())
+  tabela            String                           @db.VarChar(100)
+  operacao          OperacaoAudit
+  registro_id       Int
+  valor_antigo      String?                          @db.Text // JSON
+  valor_novo        String?                          @db.Text // JSON
+  user_id           Int?
+  correlation_id    String?                          @db.VarChar(100)
+  timestamp         DateTime                         @default(now())
+  
+  // Relações
+  user              User?                            @relation(fields: [user_id], references: [id], onDelete: SetNull)
+  
+  @@index([tabela])
+  @@index([operacao])
+  @@index([user_id])
+  @@index([timestamp])
+  @@index([correlation_id])
+  @@map("AUDIT_LOG")
+}
+
+enum OperacaoAudit {
+  INSERT
+  UPDATE
+  DELETE
+}
+
+// ============================================================================
+// ETL CONTROL - Controle de execução do ETL
+// ============================================================================
+
+model ETL_Execution {
+  id                Int                              @id @default(autoincrement())
+  started_at        DateTime                         @default(now())
+  finished_at       DateTime?
+  status            ETLStatus                        @default(running)
+  records_extracted Int                              @default(0)
+  records_loaded    Int                              @default(0)
+  records_failed    Int                              @default(0)
+  error_message     String?                          @db.Text
+  
+  @@index([status])
+  @@index([started_at])
+  @@map("ETL_Execution")
+}
+
+enum ETLStatus {
+  running
+  completed
+  failed
+  cancelled
+}

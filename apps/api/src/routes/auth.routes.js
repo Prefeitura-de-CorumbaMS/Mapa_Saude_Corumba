@@ -1,0 +1,146 @@
+const express = require('express');
+const bcrypt = require('bcryptjs');
+const jwt = require('jsonwebtoken');
+const { prisma } = require('@sigls/database');
+const { logger } = require('@sigls/logger');
+const { asyncHandler } = require('../middleware/error.middleware');
+
+const router = express.Router();
+
+// ============================================================================
+// AUTH ROUTES
+// ============================================================================
+
+/**
+ * POST /api/auth/login
+ * Autenticação de usuário
+ */
+router.post('/login', asyncHandler(async (req, res) => {
+  const { username, password } = req.body;
+  
+  if (!username || !password) {
+    return res.status(400).json({
+      success: false,
+      error: 'Username and password are required',
+    });
+  }
+  
+  // Buscar usuário
+  const user = await prisma.user.findUnique({
+    where: { username },
+  });
+  
+  if (!user || !user.ativo) {
+    logger.warn('Login attempt failed - user not found or inactive', {
+      username,
+      ip: req.ip,
+    });
+    
+    return res.status(401).json({
+      success: false,
+      error: 'Invalid credentials',
+    });
+  }
+  
+  // Verificar senha
+  const isPasswordValid = await bcrypt.compare(password, user.password_hash);
+  
+  if (!isPasswordValid) {
+    logger.warn('Login attempt failed - invalid password', {
+      user_id: user.id,
+      username,
+      ip: req.ip,
+    });
+    
+    return res.status(401).json({
+      success: false,
+      error: 'Invalid credentials',
+    });
+  }
+  
+  // Atualizar last_login
+  await prisma.user.update({
+    where: { id: user.id },
+    data: { last_login: new Date() },
+  });
+  
+  // Gerar JWT
+  const token = jwt.sign(
+    {
+      userId: user.id,
+      username: user.username,
+      role: user.role,
+    },
+    process.env.JWT_SECRET,
+    { expiresIn: process.env.JWT_EXPIRES_IN || '24h' }
+  );
+  
+  logger.info('User logged in successfully', {
+    user_id: user.id,
+    username: user.username,
+    role: user.role,
+  });
+  
+  res.json({
+    success: true,
+    data: {
+      token,
+      user: {
+        id: user.id,
+        username: user.username,
+        email: user.email,
+        role: user.role,
+      },
+    },
+  });
+}));
+
+/**
+ * POST /api/auth/validate
+ * Valida token JWT
+ */
+router.post('/validate', asyncHandler(async (req, res) => {
+  const { token } = req.body;
+  
+  if (!token) {
+    return res.status(400).json({
+      success: false,
+      error: 'Token is required',
+    });
+  }
+  
+  try {
+    const decoded = jwt.verify(token, process.env.JWT_SECRET);
+    
+    // Verificar se usuário ainda existe e está ativo
+    const user = await prisma.user.findUnique({
+      where: { id: decoded.userId },
+      select: {
+        id: true,
+        username: true,
+        email: true,
+        role: true,
+        ativo: true,
+      },
+    });
+    
+    if (!user || !user.ativo) {
+      return res.status(401).json({
+        success: false,
+        error: 'Invalid token',
+      });
+    }
+    
+    res.json({
+      success: true,
+      data: { user },
+    });
+  } catch (error) {
+    return res.status(401).json({
+      success: false,
+      error: 'Invalid or expired token',
+    });
+  }
+}));
+
+module.exports = router;
