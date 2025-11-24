@@ -68,7 +68,16 @@ VITE_API_URL="http://localhost:3001"
 LOG_LEVEL="info"
 LOG_FILE_PATH="./logs/app.log"
 ```
+### 3.1 Testar Conexão com o MySQL
 
+```bash
+npm run test:mysql
+```
+### 3.2 Testar Conexão com o PostgreSQL
+
+```bash
+npm run test:postgres
+```
 ### 4. Configurar Banco de Dados
 
 #### 4.1. Criar o Banco de Dados
