@@ -32,12 +32,22 @@ copy .env.example .env
 
 Edite o arquivo `.env` com suas configurações:
 
+**IMPORTANTE:** Use credenciais separadas para evitar problemas com caracteres especiais (@, :, /) nas senhas.
+
 ```env
 # Database Configuration (SIGLS - Destino - MySQL)
-DATABASE_URL="mysql://usuario:senha@host:3306/sigls_db"
+DB_HOST="localhost"
+DB_PORT="3306"
+DB_NAME="sigls_db"
+DB_USER="root"
+DB_PASSWORD="sua_senha"
 
 # Source Database Configuration (Base da Saúde - Fonte - PostgreSQL)
-SOURCE_DATABASE_URL="postgresql://usuario:senha@host:5432/base_saude"
+SOURCE_DB_HOST="localhost"
+SOURCE_DB_PORT="5432"
+SOURCE_DB_NAME="base_saude"
+SOURCE_DB_USER="usuario"
+SOURCE_DB_PASSWORD="senha"
 
 # JWT Configuration
 JWT_SECRET="sua-chave-secreta-muito-forte-aqui"

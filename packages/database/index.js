@@ -1,4 +1,13 @@
 const { PrismaClient } = require('@prisma/client');
+const { buildDatabaseUrl } = require('./build-database-url');
+
+// Construir DATABASE_URL a partir de credenciais separadas
+try {
+  process.env.DATABASE_URL = buildDatabaseUrl();
+} catch (error) {
+  console.error('Erro ao construir DATABASE_URL:', error.message);
+  throw error;
+}
 
 // Singleton pattern para o Prisma Client
 let prisma;

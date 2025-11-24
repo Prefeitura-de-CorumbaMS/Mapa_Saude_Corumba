@@ -1,6 +1,7 @@
 require('dotenv').config();
 const fs = require('fs');
 const path = require('path');
+const { buildDatabaseUrl } = require('../packages/database/build-database-url');
 
 async function applyTriggers() {
   let connection = null;
@@ -8,10 +9,8 @@ async function applyTriggers() {
   try {
     console.log('\n=== Aplicando Triggers de Auditoria ===\n');
     
-    // Verificar se DATABASE_URL está configurado
-    if (!process.env.DATABASE_URL) {
-      throw new Error('DATABASE_URL não encontrado no arquivo .env');
-    }
+    // Construir DATABASE_URL a partir de credenciais separadas
+    const databaseUrl = buildDatabaseUrl();
     
     // Importar mysql2 dinamicamente
     let mysql;
@@ -22,9 +21,9 @@ async function applyTriggers() {
     }
     
     // Conectar ao banco
-    console.log('1. Conectando ao banco de dados...');
-    console.log(`   URL: ${process.env.DATABASE_URL.replace(/:[^:@]+@/, ':***@')}`);
-    connection = await mysql.createConnection(process.env.DATABASE_URL);
+    console.log('1. Conectando ao banco de dados MySQL...');
+    console.log(`   URL: ${databaseUrl.replace(/:[^:@]+@/, ':***@')}`);
+    connection = await mysql.createConnection(databaseUrl);
     console.log('✅ Conectado!\n');
     
     // Ler arquivo de triggers

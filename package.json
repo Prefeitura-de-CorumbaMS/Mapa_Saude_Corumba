@@ -19,6 +19,8 @@
     "prisma:studio": "npm run prisma:studio --workspace=@sigls/database",
     "prisma:triggers": "node scripts/apply-triggers.js",
     "setup:db": "npm run prisma:migrate && npm run prisma:triggers",
+    "test:mysql": "node scripts/test-mysql-connection.js",
+    "test:postgres": "node scripts/test-postgres-connection.js",
     "create:superadmin": "node scripts/create-superadmin.js"
   },
   "keywords": [

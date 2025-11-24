@@ -1,7 +1,11 @@
-require('dotenv').config();
+const path = require('path');
+require('dotenv').config({ path: path.join(__dirname, '../.env') });
+const { buildDatabaseUrl } = require('../packages/database/build-database-url');
 const { PrismaClient } = require('@prisma/client');
 const fs = require('fs');
-const path = require('path');
+
+// Construir DATABASE_URL a partir de credenciais separadas
+process.env.DATABASE_URL = buildDatabaseUrl();
 
 const prisma = new PrismaClient();
 

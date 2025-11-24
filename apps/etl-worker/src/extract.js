@@ -7,15 +7,24 @@ const { logger } = require('@sigls/logger');
 
 /**
  * Cria pool de conexões com o banco de dados fonte PostgreSQL
+ * Usa credenciais separadas para evitar problemas com caracteres especiais na senha
  */
 function createSourcePool() {
-  if (!process.env.SOURCE_DATABASE_URL) {
-    throw new Error('SOURCE_DATABASE_URL not configured');
+  // Verificar se todas as credenciais estão configuradas
+  const requiredVars = ['SOURCE_DB_HOST', 'SOURCE_DB_NAME', 'SOURCE_DB_USER', 'SOURCE_DB_PASSWORD'];
+  const missing = requiredVars.filter(v => !process.env[v]);
+  
+  if (missing.length > 0) {
+    throw new Error(`Credenciais PostgreSQL faltando no .env: ${missing.join(', ')}`);
   }
   
   return new Pool({
-    connectionString: process.env.SOURCE_DATABASE_URL,
-    max: 5, // Máximo de conexões no pool
+    host: process.env.SOURCE_DB_HOST,
+    port: parseInt(process.env.SOURCE_DB_PORT) || 5432,
+    database: process.env.SOURCE_DB_NAME,
+    user: process.env.SOURCE_DB_USER,
+    password: process.env.SOURCE_DB_PASSWORD,
+    max: 5,
     idleTimeoutMillis: 30000,
     connectionTimeoutMillis: 10000,
   });
@@ -23,14 +32,21 @@ function createSourcePool() {
 
 /**
  * Query SQL para extração de dados da fonte PostgreSQL
- * NOTA: Esta query deve ser fornecida/ajustada conforme a estrutura da Base da Saúde
+ * NOTA: Esta query deve ser ajustada conforme a estrutura real da Base da Saúde
+ * 
+ * IMPORTANTE: A query DEVE retornar as seguintes colunas:
+ * - id_origem: Identificador único (pode ser CNES, CPF, ou combinação)
+ * - nome_medico: Nome do profissional
+ * - nome_unidade: Nome da unidade de saúde
+ * - nome_especialidade: Nome da especialidade
+ * 
  * PostgreSQL usa sintaxe diferente do MySQL (ex: TRUE ao invés de 1)
  */
 const EXTRACTION_QUERY = `
   SELECT 
-    unidade_de_saude,
-    profissional,
-    especialidade
+    "Profissional",
+    "Unidade de Saude",
+    "Especialidade"
   FROM vm_relacao_prof_x_estab_especialidade
 `;
 
