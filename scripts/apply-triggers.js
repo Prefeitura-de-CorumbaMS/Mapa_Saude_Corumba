@@ -33,63 +33,47 @@ async function applyTriggers() {
     const triggersSQL = fs.readFileSync(triggersPath, 'utf8');
     console.log('✅ Arquivo lido!\n');
     
-    // Separar os comandos (split por DELIMITER ;)
+    // Processar triggers
     console.log('3. Aplicando triggers...');
     
-    // Remover comentários e linhas vazias
-    const lines = triggersSQL
+    // Remover comentários
+    let cleanSQL = triggersSQL
       .split('\n')
-      .filter(line => !line.trim().startsWith('--') && line.trim() !== '');
+      .filter(line => !line.trim().startsWith('--'))
+      .join('\n');
     
-    let currentSQL = '';
-    let delimiter = ';';
+    // Dividir por blocos usando DELIMITER $$ ... $$ DELIMITER ;
+    // Padrão: DELIMITER $$ ... CREATE TRIGGER ... END$$ ... DELIMITER ;
+    const triggerBlocks = cleanSQL.split(/DELIMITER\s+\$\$/i);
+    
     let triggerCount = 0;
     
-    for (const line of lines) {
-      const trimmedLine = line.trim();
+    for (let i = 1; i < triggerBlocks.length; i++) {
+      const block = triggerBlocks[i];
       
-      // Detectar mudança de delimiter
-      if (trimmedLine.startsWith('DELIMITER')) {
-        const newDelimiter = trimmedLine.split(' ')[1];
-        if (newDelimiter) {
-          delimiter = newDelimiter;
-        }
-        continue;
-      }
+      // Extrair o SQL do trigger (até $$)
+      const match = block.match(/(CREATE\s+TRIGGER[\s\S]*?END)\$\$/i);
       
-      currentSQL += line + '\n';
-      
-      // Se encontrou o delimiter atual, executar
-      if (trimmedLine.endsWith(delimiter)) {
-        // Remover o delimiter do final
-        const sqlToExecute = currentSQL.replace(new RegExp(delimiter + '\\s*$'), '').trim();
+      if (match) {
+        const triggerSQL = match[1].trim();
+        const triggerName = triggerSQL.match(/CREATE\s+TRIGGER\s+(\w+)/i)?.[1];
         
-        if (sqlToExecute) {
+        if (triggerName && triggerSQL) {
           try {
-            // Verificar se é um DROP TRIGGER (para recriar)
-            if (sqlToExecute.toUpperCase().includes('CREATE TRIGGER')) {
-              const triggerName = sqlToExecute.match(/CREATE TRIGGER\s+(\w+)/i)?.[1];
-              
-              // Tentar dropar o trigger se já existir
-              if (triggerName) {
-                try {
-                  await connection.query(`DROP TRIGGER IF EXISTS ${triggerName}`);
-                } catch (e) {
-                  // Ignorar erro se trigger não existir
-                }
-              }
-              
-              await connection.query(sqlToExecute);
-              triggerCount++;
-              console.log(`   ✅ Trigger criado: ${triggerName}`);
-            }
+            // Dropar trigger se existir
+            await connection.query(`DROP TRIGGER IF EXISTS ${triggerName}`);
+            
+            // Criar trigger
+            await connection.query(triggerSQL);
+            triggerCount++;
+            console.log(`   ✅ Trigger criado: ${triggerName}`);
           } catch (error) {
-            console.error(`   ❌ Erro ao executar SQL:`, error.message);
-            console.error(`   SQL: ${sqlToExecute.substring(0, 100)}...`);
+            console.error(`   ❌ Erro ao criar trigger ${triggerName}:`, error.message);
+            if (error.sqlMessage) {
+              console.error(`   SQL Error: ${error.sqlMessage}`);
+            }
           }
         }
-        
-        currentSQL = '';
       }
     }
     
