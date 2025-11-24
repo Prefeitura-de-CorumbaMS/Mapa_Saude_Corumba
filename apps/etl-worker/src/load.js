@@ -60,7 +60,10 @@ async function loadBatch(batch) {
       try {
         // UPSERT: Atualiza se existe, cria se não existe
         await tx.sTAGING_Info_Origem.upsert({
-          where: { id_origem: record.id_origem },
+          where: { nome_medico: record.nome_medico_bruto,
+                    nome_unidade: record.nome_unidade_bruto,
+                    nome_especialidade: record.nome_especialidade_bruto,
+                  },
           update: {
             nome_medico_bruto: record.nome_medico_bruto,
             nome_unidade_bruto: record.nome_unidade_bruto,
@@ -71,7 +74,6 @@ async function loadBatch(batch) {
             },
           },
           create: {
-            id_origem: record.id_origem,
             nome_medico_bruto: record.nome_medico_bruto,
             nome_unidade_bruto: record.nome_unidade_bruto,
             nome_especialidade_bruto: record.nome_especialidade_bruto,
@@ -80,7 +82,9 @@ async function loadBatch(batch) {
         });
       } catch (error) {
         logger.warn('Failed to upsert record', {
-          id_origem: record.id_origem,
+          nome_medico: record.nome_medico_bruto,
+          nome_unidade: record.nome_unidade_bruto,
+          nome_especialidade: record.nome_especialidade_bruto,
           error: error.message,
         });
         throw error;

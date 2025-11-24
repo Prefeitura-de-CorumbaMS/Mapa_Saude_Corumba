@@ -44,9 +44,9 @@ function createSourcePool() {
  */
 const EXTRACTION_QUERY = `
   SELECT 
-    "Profissional",
-    "Unidade de Saude",
-    "Especialidade"
+    "Profissional" as nome_medico,
+    "Unidade de Saude" as nome_unidade,
+    "Especialidade" as nome_especialidade
   FROM vm_relacao_prof_x_estab_especialidade
 `;
 
