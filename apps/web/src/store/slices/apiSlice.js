@@ -1,7 +1,7 @@
 import { createApi, fetchBaseQuery } from '@reduxjs/toolkit/query/react'
 
 const baseQuery = fetchBaseQuery({
-  baseUrl: import.meta.env.VITE_API_URL || 'http://localhost:3001/api',
+  baseUrl: '/api',
   prepareHeaders: (headers, { getState }) => {
     const token = getState().auth.token
     if (token) {
@@ -14,7 +14,7 @@ const baseQuery = fetchBaseQuery({
 export const apiSlice = createApi({
   reducerPath: 'api',
   baseQuery,
-  tagTypes: ['Unidades', 'Medicos', 'Especialidades', 'Staging', 'Users', 'Audit', 'ETL'],
+  tagTypes: ['Unidades', 'Medicos', 'Especialidades', 'Staging', 'Users', 'Audit', 'ETL', 'Mapeamentos'],
   endpoints: (builder) => ({
     // Auth
     login: builder.mutation({
@@ -32,6 +32,10 @@ export const apiSlice = createApi({
         params,
       }),
       providesTags: ['Unidades'],
+    }),
+
+    getUnidadeMedicos: builder.query({
+      query: (id) => `/unidades/${id}/medicos`,
     }),
     
     createUnidade: builder.mutation({
@@ -134,12 +138,71 @@ export const apiSlice = createApi({
       query: () => '/etl/stats',
       providesTags: ['ETL'],
     }),
+
+    // Normalização de Especialidades
+    getEspecialidadesBrutas: builder.query({
+      query: () => '/especialidades/brutas/list',
+      providesTags: ['Especialidades'],
+    }),
+
+    getMapeamentos: builder.query({
+      query: () => '/especialidades/mapeamentos/list',
+      providesTags: ['Mapeamentos'],
+    }),
+
+    getEstatisticasNormalizacao: builder.query({
+      query: () => '/especialidades/estatisticas/normalizacao',
+      providesTags: ['Mapeamentos'],
+    }),
+
+    createMapeamento: builder.mutation({
+      query: (data) => ({
+        url: '/especialidades/mapear',
+        method: 'POST',
+        body: data,
+      }),
+      invalidatesTags: ['Mapeamentos', 'Especialidades'],
+    }),
+
+    updateMapeamento: builder.mutation({
+      query: ({ id, body }) => ({
+        url: `/especialidades/mapear/${id}`,
+        method: 'PUT',
+        body,
+      }),
+      invalidatesTags: ['Mapeamentos'],
+    }),
+
+    deleteMapeamento: builder.mutation({
+      query: (id) => ({
+        url: `/especialidades/mapear/${id}`,
+        method: 'DELETE',
+      }),
+      invalidatesTags: ['Mapeamentos', 'Especialidades'],
+    }),
+
+    // Upload de imagem
+    uploadUnidadeImagem: builder.mutation({
+      query: (formData) => ({
+        url: '/upload/unidade-imagem',
+        method: 'POST',
+        body: formData,
+      }),
+    }),
+
+    deleteUnidadeImagem: builder.mutation({
+      query: (filename) => ({
+        url: `/upload/unidade-imagem/${filename}`,
+        method: 'DELETE',
+      }),
+    }),
   }),
 })
 
 export const {
   useLoginMutation,
   useGetUnidadesQuery,
+  useGetUnidadeMedicosQuery,
   useCreateUnidadeMutation,
   useUpdateUnidadeMutation,
   useDeleteUnidadeMutation,
@@ -153,4 +216,12 @@ export const {
   useGetAuditLogsQuery,
   useGetETLExecutionsQuery,
   useGetETLStatsQuery,
+  useGetEspecialidadesBrutasQuery,
+  useGetMapeamentosQuery,
+  useGetEstatisticasNormalizacaoQuery,
+  useCreateMapeamentoMutation,
+  useUpdateMapeamentoMutation,
+  useDeleteMapeamentoMutation,
+  useUploadUnidadeImagemMutation,
+  useDeleteUnidadeImagemMutation,
 } = apiSlice

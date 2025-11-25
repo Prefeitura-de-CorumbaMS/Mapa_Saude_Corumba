@@ -14,6 +14,7 @@ import {
   LogoutOutlined,
   MenuFoldOutlined,
   MenuUnfoldOutlined,
+  TagsOutlined,
 } from '@ant-design/icons'
 import { logout } from '../store/slices/authSlice'
 
@@ -34,6 +35,7 @@ export default function AdminLayout() {
     { key: '/admin/unidades', icon: <EnvironmentOutlined />, label: 'Unidades' },
     { key: '/admin/medicos', icon: <MedicineBoxOutlined />, label: 'Médicos' },
     { key: '/admin/especialidades', icon: <TeamOutlined />, label: 'Especialidades' },
+    { key: '/admin/especialidades-normalizacao', icon: <TagsOutlined />, label: 'Normalização' },
     ...(isSuperadmin ? [
       { key: '/admin/users', icon: <UserOutlined />, label: 'Usuários' },
       { key: '/admin/audit', icon: <AuditOutlined />, label: 'Auditoria' },

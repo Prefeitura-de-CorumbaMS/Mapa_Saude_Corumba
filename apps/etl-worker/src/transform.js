@@ -21,27 +21,26 @@ function transformData(records) {
   
   for (const record of records) {
     try {
-      // Validar id_origem (obrigatório)
-      if (!record.nome_medico || !record.nome_unidade || !record.nome_especialidade) {
+      // Validar campos obrigatórios
+      if (!record.id_origem || !record.nome_medico || !record.nome_unidade || !record.nome_especialidade) {
         skipped++;
         continue;
       }
-      
-      // Verificar se já existe (usar o mais recente)
-      if (uniqueRecords.has(record.nome_medico) || uniqueRecords.has(record.nome_unidade) || uniqueRecords.has(record.nome_especialidade)) {
+
+      // Verificar se já existe (usar o id_origem como chave única)
+      if (uniqueRecords.has(record.id_origem)) {
         continue;
       }
-      
+
       // Transformar campos
       const transformed = {
+        id_origem: record.id_origem,
         nome_medico_bruto: cleanString(record.nome_medico),
         nome_unidade_bruto: cleanString(record.nome_unidade),
         nome_especialidade_bruto: cleanString(record.nome_especialidade),
       };
-      
-      uniqueRecords.set(record.nome_medico, transformed);
-      uniqueRecords.set(record.nome_unidade, transformed);
-      uniqueRecords.set(record.nome_especialidade, transformed);
+
+      uniqueRecords.set(record.id_origem, transformed);
       
     } catch (error) {
       logger.warn('Failed to transform record', {
@@ -115,14 +114,15 @@ function extractUniqueMedicos(records) {
  */
 function extractUniqueUnidades(records) {
   const unidades = new Map();
-  
+
   for (const record of records) {
-    if (record.nome_unidade_bruto) {
-      unidades.set(record.nome_unidade_bruto);
+    if (record.nome_unidade_bruto && record.id_origem) {
+      unidades.set(record.id_origem, record.nome_unidade_bruto);
     }
   }
-  
-  return Array.from(unidades.entries()).map(([nome]) => ({
+
+  return Array.from(unidades.entries()).map(([id, nome]) => ({
+    id_origem: id,
     nome: nome,
   }));
 }

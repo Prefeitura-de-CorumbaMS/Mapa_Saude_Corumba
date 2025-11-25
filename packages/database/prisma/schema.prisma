@@ -24,14 +24,15 @@ model STAGING_Info_Origem {
   id_prod_link           Int?                     // FK opcional para rastreamento
   created_at             DateTime                 @default(now())
   updated_at             DateTime                 @updatedAt
-  
+
   // Campos adicionais para enriquecimento manual
   nome_familiar          String?                  @db.VarChar(255)
   endereco_manual        String?                  @db.VarChar(500)
   latitude_manual        Decimal?                 @db.Decimal(10, 8)
   longitude_manual       Decimal?                 @db.Decimal(11, 8)
+  imagem_url             String?                  @db.VarChar(500)
   observacoes            String?                  @db.Text
-  
+
   @@index([status_processamento])
   @@index([id_origem])
   @@map("STAGING_Info_Origem")
@@ -54,14 +55,15 @@ model PROD_Unidade_Saude {
   endereco          String?                          @db.VarChar(500)
   latitude          Decimal                          @db.Decimal(10, 8) // NOT NULL - obrigatório para mapa
   longitude         Decimal                          @db.Decimal(11, 8) // NOT NULL - obrigatório para mapa
+  imagem_url        String?                          @db.VarChar(500)
   id_origem         String                           @unique @db.VarChar(100)
   ativo             Boolean                          @default(true)
   created_at        DateTime                         @default(now())
   updated_at        DateTime                         @updatedAt
-  
+
   // Relações
   especialidades    Junction_Unidade_Especialidade[]
-  
+
   @@index([ativo])
   @@index([latitude, longitude])
   @@map("PROD_Unidade_Saude")
@@ -88,11 +90,12 @@ model PROD_Especialidade {
   ativo             Boolean                          @default(true)
   created_at        DateTime                         @default(now())
   updated_at        DateTime                         @updatedAt
-  
+
   // Relações
   unidades          Junction_Unidade_Especialidade[]
   medicos           Junction_Medico_Especialidade[]
-  
+  mapeamentos       Especialidade_Mapeamento[]       @relation("EspecialidadeNormalizada")
+
   @@index([ativo])
   @@map("PROD_Especialidade")
 }
@@ -126,6 +129,28 @@ model Junction_Medico_Especialidade {
 }
 
 // ============================================================================
+// NORMALIZATION SYSTEM - Sistema de normalização de especialidades
+// ============================================================================
+
+model Especialidade_Mapeamento {
+  id                          Int                  @id @default(autoincrement())
+  especialidade_bruta         String               @unique @db.VarChar(255)
+  especialidade_normalizada   String               @db.VarChar(255)
+  criado_por                  Int
+  criado_em                   DateTime             @default(now())
+  atualizado_em               DateTime             @updatedAt
+
+  // Relações
+  usuario                     User                 @relation(fields: [criado_por], references: [id])
+  especialidade               PROD_Especialidade?  @relation("EspecialidadeNormalizada", fields: [especialidade_normalizada], references: [nome])
+
+  @@index([especialidade_bruta])
+  @@index([especialidade_normalizada])
+  @@index([criado_por])
+  @@map("Especialidade_Mapeamento")
+}
+
+// ============================================================================
 // USER MANAGEMENT - Sistema de usuários e RBAC
 // ============================================================================
 
@@ -139,10 +164,11 @@ model User {
   created_at        DateTime                         @default(now())
   updated_at        DateTime                         @updatedAt
   last_login        DateTime?
-  
+
   // Relações
   audit_logs        AUDIT_LOG[]
-  
+  mapeamentos       Especialidade_Mapeamento[]
+
   @@index([username])
   @@index([email])
   @@index([role])

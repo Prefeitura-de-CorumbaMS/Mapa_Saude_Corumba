@@ -197,23 +197,79 @@ router.put('/:id', authenticate, requireAdmin, asyncHandler(async (req, res) => 
 }));
 
 /**
+ * GET /api/unidades/:id/medicos
+ * Busca médicos que atendem em uma unidade (baseado em especialidades em comum)
+ */
+router.get('/:id/medicos', asyncHandler(async (req, res) => {
+  const { id } = req.params;
+
+  // Buscar especialidades da unidade
+  const unidadeEspecialidades = await prisma.junction_Unidade_Especialidade.findMany({
+    where: { id_unidade: parseInt(id) },
+    select: { id_especialidade: true },
+  });
+
+  const especialidadeIds = unidadeEspecialidades.map(e => e.id_especialidade);
+
+  if (especialidadeIds.length === 0) {
+    return res.json({
+      success: true,
+      data: [],
+    });
+  }
+
+  // Buscar médicos que têm essas especialidades
+  const medicos = await prisma.pROD_Medico.findMany({
+    where: {
+      ativo: true,
+      especialidades: {
+        some: {
+          id_especialidade: {
+            in: especialidadeIds,
+          },
+        },
+      },
+    },
+    include: {
+      especialidades: {
+        include: {
+          especialidade: true,
+        },
+      },
+    },
+    orderBy: { nome: 'asc' },
+  });
+
+  // Formatar dados
+  const medicosFormatted = medicos.map(m => ({
+    ...m,
+    especialidades: m.especialidades.map(e => e.especialidade),
+  }));
+
+  res.json({
+    success: true,
+    data: medicosFormatted,
+  });
+}));
+
+/**
  * DELETE /api/unidades/:id
  * Deleta unidade (requer autenticação)
  */
 router.delete('/:id', authenticate, requireAdmin, asyncHandler(async (req, res) => {
   const { id } = req.params;
-  
+
   await prisma.pROD_Unidade_Saude.delete({
     where: { id: parseInt(id) },
   });
-  
+
   auditLog('DELETE', 'PROD_Unidade_Saude', parseInt(id), req.user.id, req.user.role);
-  
+
   logger.info('Unidade deleted', {
     user_id: req.user.id,
     unidade_id: parseInt(id),
   });
-  
+
   res.json({
     success: true,
     message: 'Unidade deleted successfully',
