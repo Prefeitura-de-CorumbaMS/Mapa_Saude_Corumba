@@ -1,3 +1,8 @@
+:root {
+  --azul-escuro: #1F3473;
+  --azul-claro: #40A1E6;
+}
+
 * {
   margin: 0;
   padding: 0;
