@@ -38,7 +38,18 @@
       "Bash(cmd //c \"taskkill /F /PID 34920\")",
       "Bash(python -m json.tool:*)",
       "Bash(node scripts/reprocessar-unidade.js:*)",
-      "Bash(node scripts/atualizar-imagem-unidade.js:*)"
+      "Bash(node scripts/atualizar-imagem-unidade.js:*)",
+      "Bash(npx prisma:*)",
+      "Bash(npm run dev:*)",
+      "Bash(timeout 3 bash:*)",
+      "Bash(timeout 5 bash:*)",
+      "Bash(cmd //c \"taskkill /F /PID 13092\")",
+      "Bash(node scripts/create-admin-quick.js:*)",
+      "Bash(cmd //c \"taskkill /F /PID 16236\")",
+      "Bash(cmd //c \"netstat -ano | findstr :3001\")",
+      "Bash(node scripts/reset-admin-password.js:*)",
+      "Bash(node scripts/check-unidade-imagem.js:*)",
+      "Bash(node scripts/atualizar-imagem-cem.js:*)"
     ],
     "deny": [],
     "ask": []

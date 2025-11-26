@@ -19,6 +19,13 @@ if (!fs.existsSync(uploadsDir)) {
   logger.info('Created uploads directory', { path: uploadsDir });
 }
 
+// Garantir que a pasta uploads existe (para ícones)
+const iconsDir = path.join(__dirname, '../../../../uploads');
+if (!fs.existsSync(iconsDir)) {
+  fs.mkdirSync(iconsDir, { recursive: true });
+  logger.info('Created icons directory', { path: iconsDir });
+}
+
 // Configuração de armazenamento
 const storage = multer.diskStorage({
   destination: function (req, file, cb) {
@@ -51,6 +58,39 @@ const upload = multer({
   fileFilter: fileFilter,
   limits: {
     fileSize: 2 * 1024 * 1024, // 2MB
+  }
+});
+
+// Configuração de armazenamento para ícones
+const iconStorage = multer.diskStorage({
+  destination: function (req, file, cb) {
+    cb(null, iconsDir);
+  },
+  filename: function (req, file, cb) {
+    // Gerar nome único: icon_mod_timestamp-random.svg
+    const uniqueSuffix = Date.now() + '-' + Math.round(Math.random() * 1E9);
+    const ext = path.extname(file.originalname);
+    cb(null, 'icon_mod_' + uniqueSuffix + ext);
+  }
+});
+
+// Filtro de tipos de arquivo para ícones (SVG, PNG)
+const iconFileFilter = (req, file, cb) => {
+  const allowedTypes = ['image/svg+xml', 'image/png'];
+
+  if (allowedTypes.includes(file.mimetype)) {
+    cb(null, true);
+  } else {
+    cb(new Error('Tipo de arquivo não permitido. Apenas SVG e PNG são aceitos para ícones.'), false);
+  }
+};
+
+// Configuração do multer para ícones
+const iconUpload = multer({
+  storage: iconStorage,
+  fileFilter: iconFileFilter,
+  limits: {
+    fileSize: 500 * 1024, // 500KB
   }
 });
 
@@ -172,5 +212,80 @@ router.delete('/unidade-imagem/:filename', authenticate, requireAdmin, asyncHand
     message: 'Imagem deletada com sucesso',
   });
 }));
+
+/**
+ * POST /api/upload/icone
+ * Upload de ícone para marcadores do mapa
+ * Requer autenticação (Admin)
+ */
+router.post('/icone', authenticate, requireAdmin, (req, res) => {
+  const uploadSingle = iconUpload.single('icone');
+
+  uploadSingle(req, res, function (err) {
+    if (err instanceof multer.MulterError) {
+      // Erros do Multer
+      if (err.code === 'LIMIT_FILE_SIZE') {
+        return res.status(400).json({
+          success: false,
+          error: 'Arquivo muito grande. Tamanho máximo: 500KB',
+        });
+      }
+
+      logger.error('Multer error during icon upload', {
+        error: err.message,
+        code: err.code,
+        user_id: req.user.id,
+      });
+
+      return res.status(400).json({
+        success: false,
+        error: `Erro no upload: ${err.message}`,
+      });
+
+    } else if (err) {
+      // Outros erros
+      logger.error('Icon upload error', {
+        error: err.message,
+        user_id: req.user.id,
+      });
+
+      return res.status(400).json({
+        success: false,
+        error: err.message,
+      });
+    }
+
+    // Upload bem-sucedido
+    if (!req.file) {
+      return res.status(400).json({
+        success: false,
+        error: 'Nenhum arquivo foi enviado',
+      });
+    }
+
+    // Construir URL relativa para o arquivo
+    const iconUrl = `/uploads/${req.file.filename}`;
+
+    logger.info('Icon uploaded successfully', {
+      filename: req.file.filename,
+      size: req.file.size,
+      mimetype: req.file.mimetype,
+      user_id: req.user.id,
+      url: iconUrl,
+    });
+
+    res.json({
+      success: true,
+      message: 'Ícone enviado com sucesso',
+      data: {
+        filename: req.file.filename,
+        originalname: req.file.originalname,
+        size: req.file.size,
+        mimetype: req.file.mimetype,
+        url: iconUrl,
+      },
+    });
+  });
+});
 
 module.exports = router;

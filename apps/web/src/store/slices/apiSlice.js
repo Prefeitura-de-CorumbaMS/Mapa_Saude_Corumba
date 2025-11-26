@@ -196,6 +196,15 @@ export const apiSlice = createApi({
         method: 'DELETE',
       }),
     }),
+
+    // Upload de ícone
+    uploadIcone: builder.mutation({
+      query: (formData) => ({
+        url: '/upload/icone',
+        method: 'POST',
+        body: formData,
+      }),
+    }),
   }),
 })
 
@@ -224,4 +233,5 @@ export const {
   useDeleteMapeamentoMutation,
   useUploadUnidadeImagemMutation,
   useDeleteUnidadeImagemMutation,
+  useUploadIconeMutation,
 } = apiSlice

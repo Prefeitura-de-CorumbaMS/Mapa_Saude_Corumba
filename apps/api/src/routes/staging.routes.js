@@ -99,7 +99,7 @@ router.get('/:id', asyncHandler(async (req, res) => {
  */
 router.put('/:id/enrich', asyncHandler(async (req, res) => {
   const { id } = req.params;
-  const { nome_familiar, endereco_manual, latitude_manual, longitude_manual, imagem_url, observacoes } = req.body;
+  const { nome_familiar, endereco_manual, latitude_manual, longitude_manual, imagem_url, icone_url, observacoes } = req.body;
 
   // Buscar o registro para pegar o nome da unidade
   const stagingRecord = await prisma.sTAGING_Info_Origem.findUnique({
@@ -119,6 +119,7 @@ router.put('/:id/enrich', asyncHandler(async (req, res) => {
   if (latitude_manual !== undefined) updateData.latitude_manual = latitude_manual;
   if (longitude_manual !== undefined) updateData.longitude_manual = longitude_manual;
   if (imagem_url !== undefined) updateData.imagem_url = imagem_url;
+  if (icone_url !== undefined) updateData.icone_url = icone_url;
   if (observacoes !== undefined) updateData.observacoes = observacoes;
 
   // ATUALIZAR TODOS OS REGISTROS DA MESMA UNIDADE
@@ -203,6 +204,7 @@ router.post('/:id/validate', asyncHandler(async (req, res) => {
       latitude: stagingRecord.latitude_manual,
       longitude: stagingRecord.longitude_manual,
       imagem_url: stagingRecord.imagem_url,
+      icone_url: stagingRecord.icone_url,
       id_origem: unidadeIdOrigem,
     },
     update: {
@@ -211,6 +213,7 @@ router.post('/:id/validate', asyncHandler(async (req, res) => {
       latitude: stagingRecord.latitude_manual,
       longitude: stagingRecord.longitude_manual,
       imagem_url: stagingRecord.imagem_url,
+      icone_url: stagingRecord.icone_url,
     },
   });
 
@@ -257,7 +260,7 @@ router.post('/:id/validate', asyncHandler(async (req, res) => {
         where: {
           mapeamentos: {
             some: {
-              nome_bruto: medicoData.especialidade,
+              especialidade_bruta: medicoData.especialidade,
             },
           },
         },

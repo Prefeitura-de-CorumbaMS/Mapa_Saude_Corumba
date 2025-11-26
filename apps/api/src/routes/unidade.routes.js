@@ -148,14 +148,16 @@ router.post('/', authenticate, requireAdmin, asyncHandler(async (req, res) => {
  */
 router.put('/:id', authenticate, requireAdmin, asyncHandler(async (req, res) => {
   const { id } = req.params;
-  const { nome, endereco, latitude, longitude, ativo, especialidades } = req.body;
-  
+  const { nome, endereco, latitude, longitude, ativo, imagem_url, icone_url, especialidades } = req.body;
+
   const updateData = {};
   if (nome) updateData.nome = nome;
   if (endereco !== undefined) updateData.endereco = endereco;
   if (latitude !== undefined) updateData.latitude = latitude;
   if (longitude !== undefined) updateData.longitude = longitude;
   if (typeof ativo === 'boolean') updateData.ativo = ativo;
+  if (imagem_url !== undefined) updateData.imagem_url = imagem_url;
+  if (icone_url !== undefined) updateData.icone_url = icone_url;
   
   const unidade = await prisma.pROD_Unidade_Saude.update({
     where: { id: parseInt(id) },

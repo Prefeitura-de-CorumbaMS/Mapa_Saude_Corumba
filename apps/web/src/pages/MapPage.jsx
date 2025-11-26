@@ -1,5 +1,5 @@
 import { useState } from 'react'
-import { MapContainer, TileLayer, Marker, ZoomControl } from 'react-leaflet'
+import { MapContainer, TileLayer, Marker, ZoomControl, useMap } from 'react-leaflet'
 import { Spin, Tag, Divider, Empty, Button, Modal, Badge, Alert } from 'antd'
 import {
   EnvironmentOutlined,
@@ -12,6 +12,36 @@ import {
 import L from 'leaflet'
 import { useGetUnidadesQuery, useGetUnidadeMedicosQuery } from '../store/slices/apiSlice'
 import 'leaflet/dist/leaflet.css'
+
+// Custom Marker component to handle zoom on click
+const CustomMarker = ({ unidade, onClick, customIcon }) => {
+  const map = useMap()
+
+  const handleClick = () => {
+    // Zoom to the marker position
+    map.setView([unidade.latitude, unidade.longitude], 18) // Zoom level 18 for close zoom
+    onClick(unidade)
+  }
+
+  const icon = customIcon || L.icon({
+    iconUrl: '/marker-icon.png',
+    iconSize: [25, 41],
+    iconAnchor: [12, 41],
+    popupAnchor: [1, -34],
+    shadowUrl: '/marker-shadow.png',
+    shadowSize: [41, 41],
+  })
+
+  return (
+    <Marker
+      position={[unidade.latitude, unidade.longitude]}
+      icon={icon}
+      eventHandlers={{
+        click: handleClick,
+      }}
+    />
+  )
+}
 
 // Fix Leaflet default icon issue
 delete L.Icon.Default.prototype._getIconUrl
@@ -299,13 +329,28 @@ export default function MapPage() {
               console.error('Unidade sem coordenadas:', unidade);
               return null;
             }
+
+            // Criar ícone customizado se a unidade tiver um icone_url
+            let customIcon = null;
+            if (unidade.icone_url) {
+              try {
+                customIcon = L.icon({
+                  iconUrl: unidade.icone_url,
+                  iconSize: [24, 36],
+                  iconAnchor: [12, 36],
+                  popupAnchor: [0, -36],
+                });
+              } catch (error) {
+                console.error('Erro ao criar ícone para unidade:', unidade.nome, error);
+              }
+            }
+
             return (
-              <Marker
+              <CustomMarker
                 key={unidade.id}
-                position={[parseFloat(unidade.latitude), parseFloat(unidade.longitude)]}
-                eventHandlers={{
-                  click: () => handleMarkerClick(unidade),
-                }}
+                unidade={unidade}
+                onClick={handleMarkerClick}
+                customIcon={customIcon}
               />
             )
           })}

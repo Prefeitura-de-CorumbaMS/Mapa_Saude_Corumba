@@ -9,6 +9,7 @@ import {
   useValidateStagingMutation,
   useUploadUnidadeImagemMutation,
   useDeleteUnidadeImagemMutation,
+  useUploadIconeMutation,
 } from '../../store/slices/apiSlice'
 
 // Fix leaflet icon issue
@@ -49,12 +50,15 @@ export default function StagingPage() {
   const [imageUrl, setImageUrl] = useState(null)
   const [imageFilename, setImageFilename] = useState(null)
   const [uploading, setUploading] = useState(false)
+  const [selectedIcon, setSelectedIcon] = useState(null)
+  const [uploadingIcon, setUploadingIcon] = useState(false)
 
   const { data, isLoading } = useGetStagingQuery({ page, limit: 20 })
   const [enrichStaging] = useEnrichStagingMutation()
   const [validateStaging] = useValidateStagingMutation()
   const [uploadImage] = useUploadUnidadeImagemMutation()
   const [deleteImage] = useDeleteUnidadeImagemMutation()
+  const [uploadIcone] = useUploadIconeMutation()
 
   const statusColors = {
     pendente: 'orange',
@@ -86,6 +90,12 @@ export default function StagingPage() {
     } else {
       setImageUrl(null)
       setImageFilename(null)
+    }
+
+    if (record.icone_url) {
+      setSelectedIcon(record.icone_url)
+    } else {
+      setSelectedIcon(null)
     }
 
     form.setFieldsValue({
@@ -134,12 +144,31 @@ export default function StagingPage() {
     }
   }
 
+  const handleUploadIcone = async (file) => {
+    setUploadingIcon(true)
+    const formData = new FormData()
+    formData.append('icone', file)
+
+    try {
+      const result = await uploadIcone(formData).unwrap()
+      setSelectedIcon(result.data.url)
+      message.success('Ícone enviado com sucesso!')
+    } catch (error) {
+      message.error(error.data?.error || 'Erro ao enviar ícone')
+    } finally {
+      setUploadingIcon(false)
+    }
+
+    return false // Prevenir upload automático
+  }
+
   const handleSaveEnrichment = async (values) => {
     try {
-      // Incluir URL da imagem se houver
+      // Incluir URL da imagem e ícone se houver
       const dataToSave = {
         ...values,
         imagem_url: imageUrl ? imageUrl.replace(import.meta.env.VITE_API_URL?.replace('/api', '') || 'http://localhost:3001', '') : null,
+        icone_url: selectedIcon || null,
       }
 
       const result = await enrichStaging({ id: selectedRecord.id, ...dataToSave }).unwrap()
@@ -155,6 +184,7 @@ export default function StagingPage() {
       setMapPosition(null)
       setImageUrl(null)
       setImageFilename(null)
+      setSelectedIcon(null)
     } catch (error) {
       message.error('Erro ao enriquecer registro')
     }
@@ -184,6 +214,7 @@ export default function StagingPage() {
     setMapPosition(null)
     setImageUrl(null)
     setImageFilename(null)
+    setSelectedIcon(null)
     form.resetFields()
   }
 
@@ -363,6 +394,67 @@ export default function StagingPage() {
               )}
               <div style={{ fontSize: '12px', color: '#999' }}>
                 Formatos aceitos: JPG, PNG, WEBP (máx. 2MB)
+              </div>
+            </Space>
+          </Form.Item>
+
+          {/* Seleção de Ícone */}
+          <Form.Item label="Ícone do Marcador no Mapa">
+            <Space direction="vertical" style={{ width: '100%' }}>
+              <div style={{ fontSize: '12px', color: '#666', marginBottom: 8 }}>
+                Escolha um dos ícones disponíveis ou adicione um novo:
+              </div>
+              <Space size="large" wrap>
+                {['/uploads/icon_mod_01.svg', '/uploads/icon_mod_02.svg', '/uploads/icon_mod_03.svg'].map((iconUrl) => (
+                  <div
+                    key={iconUrl}
+                    onClick={() => setSelectedIcon(iconUrl)}
+                    style={{
+                      border: selectedIcon === iconUrl ? '3px solid #1890ff' : '2px solid #d9d9d9',
+                      borderRadius: '8px',
+                      padding: '12px',
+                      cursor: 'pointer',
+                      transition: 'all 0.3s',
+                      backgroundColor: selectedIcon === iconUrl ? '#e6f7ff' : 'white',
+                      display: 'flex',
+                      alignItems: 'center',
+                      justifyContent: 'center',
+                      width: '80px',
+                      height: '80px',
+                    }}
+                  >
+                    <img
+                      src={iconUrl}
+                      alt={`Ícone ${iconUrl.split('_').pop()}`}
+                      style={{ maxWidth: '50px', maxHeight: '50px' }}
+                      onError={(e) => console.error('Erro ao carregar ícone:', e.target.src)}
+                    />
+                  </div>
+                ))}
+                <Upload
+                  beforeUpload={handleUploadIcone}
+                  maxCount={1}
+                  accept="image/svg+xml,image/png"
+                  showUploadList={false}
+                >
+                  <Button
+                    type="dashed"
+                    icon={<UploadOutlined />}
+                    loading={uploadingIcon}
+                    style={{ width: '80px', height: '80px' }}
+                  >
+                    {uploadingIcon ? 'Enviando...' : 'Adicionar'}
+                  </Button>
+                </Upload>
+              </Space>
+              {selectedIcon && (
+                <div style={{ marginTop: 8 }}>
+                  <strong>Ícone selecionado:</strong>{' '}
+                  <span style={{ fontSize: '12px', color: '#666' }}>{selectedIcon}</span>
+                </div>
+              )}
+              <div style={{ fontSize: '12px', color: '#999' }}>
+                Formatos aceitos para novos ícones: SVG, PNG (máx. 500KB)
               </div>
             </Space>
           </Form.Item>
