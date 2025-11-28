@@ -1,7 +1,7 @@
-import { useState } from 'react'
-import { Table, Tag, Button, Modal, Form, Input, InputNumber, message, Space, Upload, Image, Alert } from 'antd'
+import { useState, useEffect } from 'react'
+import { Table, Tag, Button, Modal, Form, Input, InputNumber, message, Space, Upload, Image, Alert, Select } from 'antd'
 import { UploadOutlined, DeleteOutlined } from '@ant-design/icons'
-import { MapContainer, TileLayer, Marker, useMapEvents } from 'react-leaflet'
+import { MapContainer, TileLayer, Marker, useMapEvents, useMap } from 'react-leaflet'
 import L from 'leaflet'
 import {
   useGetStagingQuery,
@@ -10,6 +10,7 @@ import {
   useUploadUnidadeImagemMutation,
   useDeleteUnidadeImagemMutation,
   useUploadIconeMutation,
+  useGetBairrosQuery,
 } from '../../store/slices/apiSlice'
 
 // Fix leaflet icon issue
@@ -23,6 +24,22 @@ L.Icon.Default.mergeOptions({
 // Coordenadas padrão de Corumbá-MS
 const DEFAULT_CENTER = [-19.0089, -57.6531]
 const DEFAULT_ZOOM = 13
+
+// Componente para invalidar o tamanho do mapa quando ele é exibido
+function MapSizeInvalidator() {
+  const map = useMap()
+
+  useEffect(() => {
+    // Pequeno delay para garantir que o modal está completamente renderizado
+    const timer = setTimeout(() => {
+      map.invalidateSize()
+    }, 100)
+
+    return () => clearTimeout(timer)
+  }, [map])
+
+  return null
+}
 
 // Componente para capturar cliques no mapa
 function LocationMarker({ position, setPosition, form }) {
@@ -52,19 +69,52 @@ export default function StagingPage() {
   const [uploading, setUploading] = useState(false)
   const [selectedIcon, setSelectedIcon] = useState(null)
   const [uploadingIcon, setUploadingIcon] = useState(false)
+  const [selectedBairro, setSelectedBairro] = useState(null)
+  const [sortBy, setSortBy] = useState('id')
+  const [order, setOrder] = useState('desc')
 
-  const { data, isLoading } = useGetStagingQuery({ page, limit: 20 })
+  const { data, isLoading } = useGetStagingQuery({ page, limit: 20, sortBy, order })
+  const { data: bairrosData } = useGetBairrosQuery({ ativo: true })
   const [enrichStaging] = useEnrichStagingMutation()
   const [validateStaging] = useValidateStagingMutation()
   const [uploadImage] = useUploadUnidadeImagemMutation()
   const [deleteImage] = useDeleteUnidadeImagemMutation()
   const [uploadIcone] = useUploadIconeMutation()
 
+  // Lista de bairros do banco de dados
+  const bairros = bairrosData?.data?.map(b => b.nome).sort() || []
+
   const statusColors = {
     pendente: 'orange',
     validado: 'green',
     erro: 'red',
     ignorado: 'gray',
+  }
+
+  // Handler para mudança de ordenação e paginação
+
+  const handleTableChange = (pagination, filters, sorter) => {
+    console.log('handleTableChange chamado:', { pagination, filters, sorter, currentPage: page })
+
+    // Handle sorting
+    if (sorter && sorter.field) {
+      const newOrder = sorter.order === 'ascend' ? 'asc' : 'desc'
+
+      // Only update state if sort actually changed
+      if (sorter.field !== sortBy || newOrder !== order) {
+        console.log('Aplicando nova ordenação:', sorter.field, newOrder)
+        setSortBy(sorter.field)
+        setOrder(newOrder)
+        setPage(1) // Resetar para primeira página APENAS se a ordenação mudou
+        return // Importante: retornar para evitar conflito com a paginação abaixo
+      }
+    }
+
+    // Handle pagination
+    if (pagination && pagination.current !== page) {
+      console.log('Mudando de página:', page, '->', pagination.current)
+      setPage(pagination.current)
+    }
   }
 
   const handleEnrich = (record) => {
@@ -98,9 +148,20 @@ export default function StagingPage() {
       setSelectedIcon(null)
     }
 
+    // Tentar extrair bairro do endereço existente
+    let bairroExtraido = null
+    if (record.endereco_manual) {
+      const match = record.endereco_manual.match(/- ([^,]+),/)
+      if (match && match[1]) {
+        bairroExtraido = match[1].trim()
+      }
+    }
+    setSelectedBairro(bairroExtraido)
+
     form.setFieldsValue({
       nome_familiar: record.nome_familiar,
       endereco_manual: record.endereco_manual,
+      bairro: bairroExtraido,
       latitude_manual: record.latitude_manual,
       longitude_manual: record.longitude_manual,
       observacoes: record.observacoes,
@@ -185,6 +246,7 @@ export default function StagingPage() {
       setImageUrl(null)
       setImageFilename(null)
       setSelectedIcon(null)
+      setSelectedBairro(null)
     } catch (error) {
       message.error('Erro ao enriquecer registro')
     }
@@ -215,20 +277,62 @@ export default function StagingPage() {
     setImageUrl(null)
     setImageFilename(null)
     setSelectedIcon(null)
+    setSelectedBairro(null)
     form.resetFields()
   }
 
   const columns = [
-    { title: 'ID', dataIndex: 'id', key: 'id', width: 80 },
-    { title: 'ID Origem', dataIndex: 'id_origem', key: 'id_origem', width: 120 },
-    { title: 'Unidade', dataIndex: 'nome_unidade_bruto', key: 'nome_unidade_bruto' },
-    { title: 'Médico', dataIndex: 'nome_medico_bruto', key: 'nome_medico_bruto' },
-    { title: 'Especialidade', dataIndex: 'nome_especialidade_bruto', key: 'nome_especialidade_bruto' },
+    {
+      title: 'ID',
+      dataIndex: 'id',
+      key: 'id',
+      width: 80,
+      sorter: true,
+      sortOrder: sortBy === 'id' ? (order === 'asc' ? 'ascend' : 'descend') : null,
+    },
+    {
+      title: 'ID Origem',
+      dataIndex: 'id_origem',
+      key: 'id_origem',
+      width: 120,
+      sorter: true,
+      sortOrder: sortBy === 'id_origem' ? (order === 'asc' ? 'ascend' : 'descend') : null,
+    },
+    {
+      title: 'Unidade',
+      dataIndex: 'nome_unidade_bruto',
+      key: 'nome_unidade_bruto',
+      sorter: true,
+      sortOrder: sortBy === 'nome_unidade_bruto' ? (order === 'asc' ? 'ascend' : 'descend') : null,
+    },
+    {
+      title: 'Médico',
+      dataIndex: 'nome_medico_bruto',
+      key: 'nome_medico_bruto',
+      sorter: true,
+      sortOrder: sortBy === 'nome_medico_bruto' ? (order === 'asc' ? 'ascend' : 'descend') : null,
+    },
+    {
+      title: 'Especialidade',
+      dataIndex: 'nome_especialidade_bruto',
+      key: 'nome_especialidade_bruto',
+      sorter: true,
+      sortOrder: sortBy === 'nome_especialidade_bruto' ? (order === 'asc' ? 'ascend' : 'descend') : null,
+    },
     {
       title: 'Status',
       dataIndex: 'status_processamento',
       key: 'status_processamento',
       width: 120,
+      sorter: true,
+      sortOrder: sortBy === 'status_processamento' ? (order === 'asc' ? 'ascend' : 'descend') : null,
+      filters: [
+        { text: 'Pendente', value: 'pendente' },
+        { text: 'Validado', value: 'validado' },
+        { text: 'Erro', value: 'erro' },
+        { text: 'Ignorado', value: 'ignorado' },
+      ],
+      onFilter: (value, record) => record.status_processamento === value,
       render: (status) => <Tag color={statusColors[status]}>{status.toUpperCase()}</Tag>
     },
     {
@@ -256,11 +360,11 @@ export default function StagingPage() {
         dataSource={data?.data || []}
         loading={isLoading}
         rowKey="id"
+        onChange={handleTableChange}
         pagination={{
           current: page,
           pageSize: 20,
           total: data?.pagination?.total || 0,
-          onChange: setPage,
         }}
       />
 
@@ -297,8 +401,41 @@ export default function StagingPage() {
             <Input placeholder="Ex: UBS Central, Hospital Municipal, etc." />
           </Form.Item>
 
-          <Form.Item name="endereco_manual" label="Endereço">
-            <Input placeholder="Endereço completo da unidade" />
+          <Form.Item
+            name="bairro"
+            label="Bairro"
+            rules={[{ required: true, message: 'Selecione o bairro' }]}
+          >
+            <Select
+              placeholder="Selecione o bairro"
+              showSearch
+              value={selectedBairro}
+              onChange={setSelectedBairro}
+              filterOption={(input, option) =>
+                option.children.toLowerCase().includes(input.toLowerCase())
+              }
+            >
+              {bairros.map((bairro) => (
+                <Select.Option key={bairro} value={bairro}>
+                  {bairro}
+                </Select.Option>
+              ))}
+            </Select>
+          </Form.Item>
+
+          <Form.Item name="endereco_manual" label="Endereço (Rua e Número)">
+            <Input placeholder="Ex: R. Pernambuco, 396" />
+          </Form.Item>
+
+          <Form.Item name="telefone" label="Telefone">
+            <Input placeholder="Ex: (67) 3234-5678" />
+          </Form.Item>
+
+          <Form.Item name="horario_atendimento" label="Horário de Atendimento">
+            <Input.TextArea
+              rows={3}
+              placeholder="Ex: Segunda a Sexta: 07:00 às 17:00&#10;Sábado: 08:00 às 12:00&#10;Domingo: Fechado"
+            />
           </Form.Item>
 
           {/* Mapa Interativo */}
@@ -310,17 +447,18 @@ export default function StagingPage() {
             }}>
               Localização no Mapa *
             </label>
-            <div style={{ height: '300px', marginBottom: 16 }}>
+            <div style={{ height: '400px', marginBottom: 16 }}>
               <MapContainer
                 center={mapPosition || DEFAULT_CENTER}
                 zoom={DEFAULT_ZOOM}
                 style={{ height: '100%', width: '100%' }}
-                key={mapPosition ? `${mapPosition[0]}-${mapPosition[1]}` : 'default'}
+                scrollWheelZoom={true}
               >
                 <TileLayer
                   attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a>'
                   url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
                 />
+                <MapSizeInvalidator />
                 <LocationMarker
                   position={mapPosition}
                   setPosition={setMapPosition}
@@ -402,33 +540,43 @@ export default function StagingPage() {
           <Form.Item label="Ícone do Marcador no Mapa">
             <Space direction="vertical" style={{ width: '100%' }}>
               <div style={{ fontSize: '12px', color: '#666', marginBottom: 8 }}>
-                Escolha um dos ícones disponíveis ou adicione um novo:
+                Escolha um dos ícones padrão ou adicione um novo:
               </div>
               <Space size="large" wrap>
-                {['/uploads/icon_mod_01.svg', '/uploads/icon_mod_02.svg', '/uploads/icon_mod_03.svg'].map((iconUrl) => (
+                {[
+                  { url: '/uploads/icon_mod_UBS.png', label: 'UBS' },
+                  { url: '/uploads/icon_mod_Pronto_Atendimento.png', label: 'Pronto Atendimento' },
+                  { url: '/uploads/icon_mod_Doacao.png', label: 'Hemonúcleo' },
+                  { url: '/uploads/Icone_Academia_da_Saúde.png', label: 'Academia de Saúde' },
+                ].map((icon) => (
                   <div
-                    key={iconUrl}
-                    onClick={() => setSelectedIcon(iconUrl)}
+                    key={icon.url}
+                    onClick={() => setSelectedIcon(icon.url)}
                     style={{
-                      border: selectedIcon === iconUrl ? '3px solid #1890ff' : '2px solid #d9d9d9',
+                      border: selectedIcon === icon.url ? '3px solid #1890ff' : '2px solid #d9d9d9',
                       borderRadius: '8px',
-                      padding: '12px',
+                      padding: '8px',
                       cursor: 'pointer',
                       transition: 'all 0.3s',
-                      backgroundColor: selectedIcon === iconUrl ? '#e6f7ff' : 'white',
+                      backgroundColor: selectedIcon === icon.url ? '#e6f7ff' : 'white',
                       display: 'flex',
+                      flexDirection: 'column',
                       alignItems: 'center',
                       justifyContent: 'center',
-                      width: '80px',
-                      height: '80px',
+                      width: '100px',
+                      height: '100px',
+                      gap: '8px',
                     }}
                   >
                     <img
-                      src={iconUrl}
-                      alt={`Ícone ${iconUrl.split('_').pop()}`}
-                      style={{ maxWidth: '50px', maxHeight: '50px' }}
+                      src={icon.url}
+                      alt={icon.label}
+                      style={{ maxWidth: '50px', maxHeight: '50px', objectFit: 'contain' }}
                       onError={(e) => console.error('Erro ao carregar ícone:', e.target.src)}
                     />
+                    <span style={{ fontSize: '11px', color: '#666', textAlign: 'center', fontWeight: selectedIcon === icon.url ? 'bold' : 'normal' }}>
+                      {icon.label}
+                    </span>
                   </div>
                 ))}
                 <Upload

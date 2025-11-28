@@ -3,6 +3,77 @@
 -- Estes triggers devem ser executados manualmente após as migrations
 -- ============================================================================
 
+-- Trigger para sincronizar mudanças da staging para produção
+DELIMITER $$
+CREATE TRIGGER sync_staging_to_prod
+AFTER UPDATE ON STAGING_Info_Origem
+FOR EACH ROW
+BEGIN
+    -- Só sincronizar se o registro já foi processado para produção (tem id_prod_link)
+    -- e se algum campo relevante foi alterado
+    IF (OLD.id_prod_link IS NOT NULL AND 
+        (OLD.nome_familiar != NEW.nome_familiar OR
+         OLD.endereco_manual != NEW.endereco_manual OR
+         OLD.latitude_manual != NEW.latitude_manual OR
+         OLD.longitude_manual != NEW.longitude_manual OR
+         OLD.imagem_url != NEW.imagem_url OR
+         OLD.icone_url != NEW.icone_url OR
+         OLD.telefone != NEW.telefone OR
+         OLD.horario_atendimento != NEW.horario_atendimento OR
+         OLD.observacoes != NEW.observacoes)) THEN
+        
+        -- Atualizar o registro de produção correspondente
+        UPDATE PROD_Unidade_Saude 
+        SET 
+            nome = COALESCE(NEW.nome_familiar, NEW.nome_unidade_bruto, 'Nome não informado'),
+            endereco = NEW.endereco_manual,
+            latitude = NEW.latitude_manual,
+            longitude = NEW.longitude_manual,
+            telefone = NEW.telefone,
+            horario_atendimento = NEW.horario_atendimento,
+            imagem_url = NEW.imagem_url,
+            icone_url = NEW.icone_url,
+            updated_at = NOW()
+        WHERE id = OLD.id_prod_link;
+        
+        -- Log da sincronização
+        INSERT INTO AUDIT_LOG (tabela, operacao, registro_id, valor_antigo, valor_novo, correlation_id, timestamp)
+        VALUES (
+            'PROD_Unidade_Saude',
+            'UPDATE',
+            OLD.id_prod_link,
+            JSON_OBJECT(
+                'sync_trigger', 'staging_update',
+                'staging_id', NEW.id,
+                'updated_fields', JSON_ARRAY(
+                    CASE WHEN OLD.nome_familiar != NEW.nome_familiar THEN 'nome' END,
+                    CASE WHEN OLD.endereco_manual != NEW.endereco_manual THEN 'endereco' END,
+                    CASE WHEN OLD.latitude_manual != NEW.latitude_manual THEN 'latitude' END,
+                    CASE WHEN OLD.longitude_manual != NEW.longitude_manual THEN 'longitude' END,
+                    CASE WHEN OLD.imagem_url != NEW.imagem_url THEN 'imagem_url' END,
+                    CASE WHEN OLD.icone_url != NEW.icone_url THEN 'icone_url' END,
+                    CASE WHEN OLD.telefone != NEW.telefone THEN 'telefone' END,
+                    CASE WHEN OLD.horario_atendimento != NEW.horario_atendimento THEN 'horario_atendimento' END,
+                    CASE WHEN OLD.observacoes != NEW.observacoes THEN 'observacoes' END
+                )
+            ),
+            JSON_OBJECT(
+                'nome', COALESCE(NEW.nome_familiar, NEW.nome_unidade_bruto, 'Nome não informado'),
+                'endereco', NEW.endereco_manual,
+                'latitude', NEW.latitude_manual,
+                'longitude', NEW.longitude_manual,
+                'telefone', NEW.telefone,
+                'horario_atendimento', NEW.horario_atendimento,
+                'imagem_url', NEW.imagem_url,
+                'icone_url', NEW.icone_url
+            ),
+            CONCAT('staging_sync_', NEW.id),
+            NOW()
+        );
+    END IF;
+END$$
+DELIMITER ;
+
 -- Trigger para PROD_Unidade_Saude - INSERT
 DELIMITER $$
 CREATE TRIGGER audit_unidade_insert

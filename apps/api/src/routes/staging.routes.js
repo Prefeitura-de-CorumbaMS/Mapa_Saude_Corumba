@@ -16,28 +16,47 @@ router.use(requireAdmin);
 
 /**
  * GET /api/staging
- * Lista registros em staging com filtros
+ * Lista registros em staging com filtros e ordenação
  */
 router.get('/', asyncHandler(async (req, res) => {
-  const { status, page = 1, limit = 20 } = req.query;
-  
+  const { status, page = 1, limit = 20, sortBy, order = 'desc' } = req.query;
+
   const where = {};
   if (status) {
     where.status_processamento = status;
   }
-  
+
   const skip = (parseInt(page) - 1) * parseInt(limit);
-  
+
+  // Configurar ordenação
+  let orderBy = { id: 'desc' }; // Padrão: ID decrescente
+
+  if (sortBy) {
+    // Mapear campos válidos para ordenação
+    const validSortFields = {
+      id: 'id',
+      id_origem: 'id_origem',
+      nome_unidade_bruto: 'nome_unidade_bruto',
+      nome_medico_bruto: 'nome_medico_bruto',
+      nome_especialidade_bruto: 'nome_especialidade_bruto',
+      status_processamento: 'status_processamento',
+    };
+
+    if (validSortFields[sortBy]) {
+      orderBy = { [validSortFields[sortBy]]: order === 'asc' ? 'asc' : 'desc' };
+    }
+  }
+
   const [records, total] = await Promise.all([
     prisma.sTAGING_Info_Origem.findMany({
       where,
       skip,
       take: parseInt(limit),
-      orderBy: { created_at: 'desc' },
+      orderBy,
     }),
     prisma.sTAGING_Info_Origem.count({ where }),
   ]);
-  
+
   res.json({
     success: true,
     data: records,
@@ -99,7 +118,7 @@ router.get('/:id', asyncHandler(async (req, res) => {
  */
 router.put('/:id/enrich', asyncHandler(async (req, res) => {
   const { id } = req.params;
-  const { nome_familiar, endereco_manual, latitude_manual, longitude_manual, imagem_url, icone_url, observacoes } = req.body;
+  const { nome_familiar, endereco_manual, bairro, latitude_manual, longitude_manual, telefone, horario_atendimento, imagem_url, icone_url, observacoes } = req.body;
 
   // Buscar o registro para pegar o nome da unidade
   const stagingRecord = await prisma.sTAGING_Info_Origem.findUnique({
@@ -116,8 +135,11 @@ router.put('/:id/enrich', asyncHandler(async (req, res) => {
   const updateData = {};
   if (nome_familiar) updateData.nome_familiar = nome_familiar;
   if (endereco_manual) updateData.endereco_manual = endereco_manual;
+  if (bairro !== undefined) updateData.bairro = bairro;
   if (latitude_manual !== undefined) updateData.latitude_manual = latitude_manual;
   if (longitude_manual !== undefined) updateData.longitude_manual = longitude_manual;
+  if (telefone !== undefined) updateData.telefone = telefone;
+  if (horario_atendimento !== undefined) updateData.horario_atendimento = horario_atendimento;
   if (imagem_url !== undefined) updateData.imagem_url = imagem_url;
   if (icone_url !== undefined) updateData.icone_url = icone_url;
   if (observacoes !== undefined) updateData.observacoes = observacoes;
@@ -201,8 +223,11 @@ router.post('/:id/validate', asyncHandler(async (req, res) => {
     create: {
       nome: stagingRecord.nome_familiar || stagingRecord.nome_unidade_bruto || 'Nome não informado',
       endereco: stagingRecord.endereco_manual,
+      bairro: stagingRecord.bairro,
       latitude: stagingRecord.latitude_manual,
       longitude: stagingRecord.longitude_manual,
+      telefone: stagingRecord.telefone,
+      horario_atendimento: stagingRecord.horario_atendimento,
       imagem_url: stagingRecord.imagem_url,
       icone_url: stagingRecord.icone_url,
       id_origem: unidadeIdOrigem,
@@ -210,8 +235,11 @@ router.post('/:id/validate', asyncHandler(async (req, res) => {
     update: {
       nome: stagingRecord.nome_familiar || stagingRecord.nome_unidade_bruto || 'Nome não informado',
       endereco: stagingRecord.endereco_manual,
+      bairro: stagingRecord.bairro,
       latitude: stagingRecord.latitude_manual,
       longitude: stagingRecord.longitude_manual,
+      telefone: stagingRecord.telefone,
+      horario_atendimento: stagingRecord.horario_atendimento,
       imagem_url: stagingRecord.imagem_url,
       icone_url: stagingRecord.icone_url,
     },
@@ -253,6 +281,21 @@ router.post('/:id/validate', asyncHandler(async (req, res) => {
         },
       });
     }
+
+    // Vincular médico à unidade (se ainda não vinculado)
+    await prisma.junction_Unidade_Medico.upsert({
+      where: {
+        id_unidade_id_medico: {
+          id_unidade: prodUnidade.id,
+          id_medico: medico.id,
+        },
+      },
+      create: {
+        id_unidade: prodUnidade.id,
+        id_medico: medico.id,
+      },
+      update: {},
+    });
 
     // Buscar especialidade normalizada
     if (medicoData.especialidade) {

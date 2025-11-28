@@ -8,41 +8,50 @@ const { runETLPipeline } = require('./pipeline');
 // ETL WORKER - Agendador e executor do pipeline ETL
 // ============================================================================
 
+// ============================================================================
+// ETL DESABILITADO - Manual data entry mode
+// ============================================================================
+// O ETL foi desabilitado pois o sistema agora utiliza entrada manual de dados.
+// Todos os dados históricos foram preservados nas tabelas STAGING_* e PROD_*.
+// Para executar o ETL manualmente (se necessário), use: node packages/etl/index.js
+// ============================================================================
+
 const CRON_SCHEDULE = process.env.ETL_SCHEDULE_CRON || '0 2 * * *'; // Padrão: 2h da manhã
 
-logger.info('ETL Worker starting', {
-  schedule: CRON_SCHEDULE,
+logger.info('ETL Worker starting (DISABLED - manual data entry mode)', {
+  schedule: 'DISABLED',
   env: process.env.NODE_ENV || 'development',
 });
 
-// Executar ETL imediatamente ao iniciar (apenas em desenvolvimento)
-if (process.env.NODE_ENV === 'development' && process.env.ETL_RUN_ON_START === 'true') {
-  logger.info('Running ETL immediately (development mode)');
-  runETLPipeline().catch(error => {
-    logger.error('ETL execution failed on startup', { error: error.message });
-  });
-}
+// DESABILITADO: Executar ETL imediatamente ao iniciar
+// if (process.env.NODE_ENV === 'development' && process.env.ETL_RUN_ON_START === 'true') {
+//   logger.info('Running ETL immediately (development mode)');
+//   runETLPipeline().catch(error => {
+//     logger.error('ETL execution failed on startup', { error: error.message });
+//   });
+// }
 
-// Agendar execução do ETL
-cron.schedule(CRON_SCHEDULE, async () => {
-  logger.info('ETL scheduled execution starting', {
-    schedule: CRON_SCHEDULE,
-    timestamp: new Date().toISOString(),
-  });
-  
-  try {
-    await runETLPipeline();
-    logger.info('ETL scheduled execution completed successfully');
-  } catch (error) {
-    logger.error('ETL scheduled execution failed', {
-      error: error.message,
-      stack: error.stack,
-    });
-  }
-});
+// DESABILITADO: Agendar execução do ETL
+// O agendamento automático foi desabilitado para modo de entrada manual de dados
+// cron.schedule(CRON_SCHEDULE, async () => {
+//   logger.info('ETL scheduled execution starting', {
+//     schedule: CRON_SCHEDULE,
+//     timestamp: new Date().toISOString(),
+//   });
+//
+//   try {
+//     await runETLPipeline();
+//     logger.info('ETL scheduled execution completed successfully');
+//   } catch (error) {
+//     logger.error('ETL scheduled execution failed', {
+//       error: error.message,
+//       stack: error.stack,
+//     });
+//   }
+// });
 
-logger.info('ETL Worker ready', {
-  message: `ETL will run on schedule: ${CRON_SCHEDULE}`,
+logger.info('ETL Worker disabled', {
+  message: 'ETL scheduling disabled - manual data entry mode active',
 });
 
 // Graceful shutdown

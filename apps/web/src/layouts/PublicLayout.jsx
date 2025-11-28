@@ -14,10 +14,10 @@ export default function PublicLayout() {
         display: 'flex',
         alignItems: 'center',
         justifyContent: 'space-between',
-        padding: '0 20px'
+        padding: '0 40px'
       }}>
         <img src="http://localhost:3001/uploads/logo__horizontal_monocromatica.png" alt="Logo Prefeitura" style={{ height: '40px' }} />
-        MAPA DA SAÚDE
+        <span style={{ color: 'white' }}>MAPA DA SAÚDE</span>
         <img src="http://localhost:3001/uploads/arte__horizontal_monocromatica.png" alt="Arte Horizontal" style={{ height: '60px' }} />
       </Header>
       <Content style={{ height: 'calc(100vh - 64px)' }}>

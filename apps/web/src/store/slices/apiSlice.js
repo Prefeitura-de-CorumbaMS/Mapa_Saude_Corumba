@@ -1,4 +1,5 @@
 import { createApi, fetchBaseQuery } from '@reduxjs/toolkit/query/react'
+import { logout } from './authSlice'
 
 const baseQuery = fetchBaseQuery({
   baseUrl: '/api',
@@ -11,10 +12,25 @@ const baseQuery = fetchBaseQuery({
   },
 })
 
+const baseQueryWithReauth = async (args, api, extraOptions) => {
+  const result = await baseQuery(args, api, extraOptions)
+
+  // Se receber erro 401 ou mensagem de token inválido, fazer logout
+  if (result.error &&
+      (result.error.status === 401 ||
+       result.error.data?.error?.includes('token') ||
+       result.error.data?.error?.includes('Token'))) {
+    api.dispatch(logout())
+    window.location.href = '/admin/login'
+  }
+
+  return result
+}
+
 export const apiSlice = createApi({
   reducerPath: 'api',
-  baseQuery,
-  tagTypes: ['Unidades', 'Medicos', 'Especialidades', 'Staging', 'Users', 'Audit', 'ETL', 'Mapeamentos'],
+  baseQuery: baseQueryWithReauth,
+  tagTypes: ['Unidades', 'Medicos', 'Especialidades', 'Staging', 'Users', 'Audit', 'ETL', 'Mapeamentos', 'Bairros'],
   endpoints: (builder) => ({
     // Auth
     login: builder.mutation({
@@ -24,7 +40,7 @@ export const apiSlice = createApi({
         body: credentials,
       }),
     }),
-    
+
     // Unidades
     getUnidades: builder.query({
       query: (params) => ({
@@ -37,7 +53,76 @@ export const apiSlice = createApi({
     getUnidadeMedicos: builder.query({
       query: (id) => `/unidades/${id}/medicos`,
     }),
-    
+
+    getUnidadeRedesSociais: builder.query({
+      query: (id) => `/unidades/${id}/redes-sociais`,
+      providesTags: ['Unidades'],
+    }),
+
+    createUnidadeRedeSocial: builder.mutation({
+      query: ({ id, ...data }) => ({
+        url: `/unidades/${id}/redes-sociais`,
+        method: 'POST',
+        body: data,
+      }),
+      invalidatesTags: ['Unidades'],
+    }),
+
+    updateUnidadeRedeSocial: builder.mutation({
+      query: ({ id, redeId, ...data }) => ({
+        url: `/unidades/${id}/redes-sociais/${redeId}`,
+        method: 'PUT',
+        body: data,
+      }),
+      invalidatesTags: ['Unidades'],
+    }),
+
+    deleteUnidadeRedeSocial: builder.mutation({
+      query: ({ id, redeId }) => ({
+        url: `/unidades/${id}/redes-sociais/${redeId}`,
+        method: 'DELETE',
+      }),
+      invalidatesTags: ['Unidades'],
+    }),
+
+    getBairros: builder.query({
+      query: (params) => ({
+        url: '/bairros',
+        params,
+      }),
+      providesTags: ['Bairros'],
+    }),
+
+    createBairro: builder.mutation({
+      query: (data) => ({
+        url: '/bairros',
+        method: 'POST',
+        body: data,
+      }),
+      invalidatesTags: ['Bairros'],
+    }),
+
+    updateBairro: builder.mutation({
+      query: ({ id, ...data }) => ({
+        url: `/bairros/${id}`,
+        method: 'PUT',
+        body: data,
+      }),
+      invalidatesTags: ['Bairros'],
+    }),
+
+    deleteBairro: builder.mutation({
+      query: (id) => ({
+        url: `/bairros/${id}`,
+        method: 'DELETE',
+      }),
+      invalidatesTags: ['Bairros'],
+    }),
+
+    getLastUpdate: builder.query({
+      query: () => '/unidades/stats/last-update',
+    }),
+
     createUnidade: builder.mutation({
       query: (data) => ({
         url: '/unidades',
@@ -46,7 +131,7 @@ export const apiSlice = createApi({
       }),
       invalidatesTags: ['Unidades'],
     }),
-    
+
     updateUnidade: builder.mutation({
       query: ({ id, ...data }) => ({
         url: `/unidades/${id}`,
@@ -55,7 +140,7 @@ export const apiSlice = createApi({
       }),
       invalidatesTags: ['Unidades'],
     }),
-    
+
     deleteUnidade: builder.mutation({
       query: (id) => ({
         url: `/unidades/${id}`,
@@ -63,13 +148,48 @@ export const apiSlice = createApi({
       }),
       invalidatesTags: ['Unidades'],
     }),
-    
+
+    // Médicos
+    getMedicos: builder.query({
+      query: (params) => ({
+        url: '/medicos',
+        params,
+      }),
+      providesTags: ['Medicos'],
+    }),
+
+    createMedico: builder.mutation({
+      query: (data) => ({
+        url: '/medicos',
+        method: 'POST',
+        body: data,
+      }),
+      invalidatesTags: ['Medicos'],
+    }),
+
+    updateMedico: builder.mutation({
+      query: ({ id, ...data }) => ({
+        url: `/medicos/${id}`,
+        method: 'PUT',
+        body: data,
+      }),
+      invalidatesTags: ['Medicos'],
+    }),
+
+    deleteMedico: builder.mutation({
+      query: (id) => ({
+        url: `/medicos/${id}`,
+        method: 'DELETE',
+      }),
+      invalidatesTags: ['Medicos'],
+    }),
+
     // Especialidades
     getEspecialidades: builder.query({
       query: () => '/especialidades',
       providesTags: ['Especialidades'],
     }),
-    
+
     // Staging
     getStaging: builder.query({
       query: (params) => ({
@@ -78,12 +198,12 @@ export const apiSlice = createApi({
       }),
       providesTags: ['Staging'],
     }),
-    
+
     getStagingById: builder.query({
       query: (id) => `/staging/${id}`,
       providesTags: ['Staging'],
     }),
-    
+
     enrichStaging: builder.mutation({
       query: ({ id, ...data }) => ({
         url: `/staging/${id}/enrich`,
@@ -92,7 +212,7 @@ export const apiSlice = createApi({
       }),
       invalidatesTags: ['Staging'],
     }),
-    
+
     validateStaging: builder.mutation({
       query: (id) => ({
         url: `/staging/${id}/validate`,
@@ -100,13 +220,13 @@ export const apiSlice = createApi({
       }),
       invalidatesTags: ['Staging', 'Unidades'],
     }),
-    
+
     // Users (Superadmin only)
     getUsers: builder.query({
       query: () => '/users',
       providesTags: ['Users'],
     }),
-    
+
     createUser: builder.mutation({
       query: (data) => ({
         url: '/users',
@@ -115,7 +235,7 @@ export const apiSlice = createApi({
       }),
       invalidatesTags: ['Users'],
     }),
-    
+
     // Audit (Superadmin only)
     getAuditLogs: builder.query({
       query: (params) => ({
@@ -124,7 +244,7 @@ export const apiSlice = createApi({
       }),
       providesTags: ['Audit'],
     }),
-    
+
     // ETL (Superadmin only)
     getETLExecutions: builder.query({
       query: (params) => ({
@@ -133,9 +253,9 @@ export const apiSlice = createApi({
       }),
       providesTags: ['ETL'],
     }),
-    
+
     getETLStats: builder.query({
-      query: () => '/etl/stats',
+      query: () => '/etl/last-execution',
       providesTags: ['ETL'],
     }),
 
@@ -212,9 +332,21 @@ export const {
   useLoginMutation,
   useGetUnidadesQuery,
   useGetUnidadeMedicosQuery,
+  useGetUnidadeRedesSociaisQuery,
+  useCreateUnidadeRedeSocialMutation,
+  useUpdateUnidadeRedeSocialMutation,
+  useDeleteUnidadeRedeSocialMutation,
+  useGetBairrosQuery,
+  useCreateBairroMutation,
+  useUpdateBairroMutation,
+  useDeleteBairroMutation,
   useCreateUnidadeMutation,
   useUpdateUnidadeMutation,
   useDeleteUnidadeMutation,
+  useGetMedicosQuery,
+  useCreateMedicoMutation,
+  useUpdateMedicoMutation,
+  useDeleteMedicoMutation,
   useGetEspecialidadesQuery,
   useGetStagingQuery,
   useGetStagingByIdQuery,
@@ -225,6 +357,7 @@ export const {
   useGetAuditLogsQuery,
   useGetETLExecutionsQuery,
   useGetETLStatsQuery,
+  useGetLastUpdateQuery,
   useGetEspecialidadesBrutasQuery,
   useGetMapeamentosQuery,
   useGetEstatisticasNormalizacaoQuery,

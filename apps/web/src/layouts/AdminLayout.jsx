@@ -31,15 +31,16 @@ export default function AdminLayout() {
   
   const menuItems = [
     { key: '/admin/dashboard', icon: <DashboardOutlined />, label: 'Dashboard' },
-    { key: '/admin/staging', icon: <DatabaseOutlined />, label: 'Staging' },
+    { key: '/admin/staging', icon: <DatabaseOutlined />, label: 'Staging (Arquivo)' },
     { key: '/admin/unidades', icon: <EnvironmentOutlined />, label: 'Unidades' },
     { key: '/admin/medicos', icon: <MedicineBoxOutlined />, label: 'Médicos' },
     { key: '/admin/especialidades', icon: <TeamOutlined />, label: 'Especialidades' },
-    { key: '/admin/especialidades-normalizacao', icon: <TagsOutlined />, label: 'Normalização' },
+    { key: '/admin/especialidades-normalizacao', icon: <TagsOutlined />, label: 'Normalização (Arquivo)' },
+    { key: '/admin/bairros', icon: <EnvironmentOutlined />, label: 'Bairros' },
     ...(isSuperadmin ? [
       { key: '/admin/users', icon: <UserOutlined />, label: 'Usuários' },
       { key: '/admin/audit', icon: <AuditOutlined />, label: 'Auditoria' },
-      { key: '/admin/etl', icon: <SyncOutlined />, label: 'ETL' },
+      { key: '/admin/etl', icon: <SyncOutlined />, label: 'ETL (Arquivo)' },
     ] : []),
   ]
   
