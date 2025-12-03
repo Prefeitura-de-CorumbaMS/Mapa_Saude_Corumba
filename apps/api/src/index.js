@@ -11,8 +11,10 @@ const stagingRoutes = require('./routes/staging.routes');
 const unidadeRoutes = require('./routes/unidade.routes');
 const medicoRoutes = require('./routes/medico.routes');
 const especialidadeRoutes = require('./routes/especialidade.routes');
+const bairroRoutes = require('./routes/bairro.routes');
 const auditRoutes = require('./routes/audit.routes');
 const etlRoutes = require('./routes/etl.routes');
+const uploadRoutes = require('./routes/upload.routes');
 
 const { errorHandler } = require('./middleware/error.middleware');
 
@@ -28,17 +30,45 @@ const PORT = process.env.API_PORT || 3001;
 // ============================================================================
 
 // Security
-app.use(helmet());
+app.use(helmet({
+  contentSecurityPolicy: {
+    directives: {
+      ...helmet.contentSecurityPolicy.getDefaultDirectives(),
+      "img-src": ["'self'", "data:", "http://localhost:3001", "http://localhost:5173"],
+    },
+  },
+  crossOriginResourcePolicy: { policy: "cross-origin" },
+}));
 
-// CORS
+// CORS - aceitar múltiplas origens
+const allowedOrigins = [
+  'http://localhost:5173',
+  'http://localhost:5174',
+  'http://localhost:5175',
+  'http://localhost:5176',
+  process.env.FRONTEND_URL,
+].filter(Boolean);
+
 app.use(cors({
-  origin: process.env.FRONTEND_URL || 'http://localhost:5173',
+  origin: (origin, callback) => {
+    // Permitir requests sem origin (como curl, postman, etc)
+    if (!origin) return callback(null, true);
+
+    if (allowedOrigins.includes(origin)) {
+      callback(null, true);
+    } else {
+      callback(new Error('Not allowed by CORS'));
+    }
+  },
   credentials: true,
 }));
 
 // Body parser
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
+
+// Servir arquivos estáticos da pasta uploads
+app.use('/uploads', express.static(path.join(__dirname, '../../../uploads')));
 
 // Request logging
 app.use(requestLogger);
@@ -59,8 +89,10 @@ app.use('/api/staging', stagingRoutes);
 app.use('/api/unidades', unidadeRoutes);
 app.use('/api/medicos', medicoRoutes);
 app.use('/api/especialidades', especialidadeRoutes);
+app.use('/api/bairros', bairroRoutes);
 app.use('/api/audit', auditRoutes);
 app.use('/api/etl', etlRoutes);
+app.use('/api/upload', uploadRoutes);
 
 // 404 handler
 app.use((req, res) => {
@@ -100,3 +132,6 @@ process.on('SIGINT', () => {
 });
 
 module.exports = app;
+
+
+

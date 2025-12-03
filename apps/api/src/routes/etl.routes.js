@@ -5,7 +5,36 @@ const { asyncHandler } = require('../middleware/error.middleware');
 
 const router = express.Router();
 
-// Todas as rotas de ETL requerem Superadmin
+// ============================================================================
+// PUBLIC ROUTES - Rotas públicas (sem autenticação)
+// ============================================================================
+
+/**
+ * GET /api/etl/last-execution
+ * Retorna apenas a última execução do ETL (público)
+ */
+router.get('/last-execution', asyncHandler(async (req, res) => {
+  const lastExecution = await prisma.eTL_Execution.findFirst({
+    orderBy: { started_at: 'desc' },
+    select: {
+      id: true,
+      started_at: true,
+      finished_at: true,
+      status: true,
+    },
+  });
+
+  res.json({
+    success: true,
+    data: {
+      lastExecution: lastExecution,
+    },
+  });
+}));
+
+// ============================================================================
+// PROTECTED ROUTES - Todas as rotas abaixo requerem Superadmin
+// ============================================================================
 router.use(authenticate);
 router.use(requireSuperadmin);
 

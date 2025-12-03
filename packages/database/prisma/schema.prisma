@@ -24,14 +24,19 @@ model STAGING_Info_Origem {
   id_prod_link           Int?                     // FK opcional para rastreamento
   created_at             DateTime                 @default(now())
   updated_at             DateTime                 @updatedAt
-  
+
   // Campos adicionais para enriquecimento manual
   nome_familiar          String?                  @db.VarChar(255)
   endereco_manual        String?                  @db.VarChar(500)
+  bairro                 String?                  @db.VarChar(100)
   latitude_manual        Decimal?                 @db.Decimal(10, 8)
   longitude_manual       Decimal?                 @db.Decimal(11, 8)
+  imagem_url             String?                  @db.VarChar(500)
+  icone_url              String?                  @db.VarChar(500)
+  telefone               String?                  @db.VarChar(100)
+  horario_atendimento    String?                  @db.Text
   observacoes            String?                  @db.Text
-  
+
   @@index([status_processamento])
   @@index([id_origem])
   @@map("STAGING_Info_Origem")
@@ -49,19 +54,28 @@ enum StatusProcessamento {
 // ============================================================================
 
 model PROD_Unidade_Saude {
-  id                Int                              @id @default(autoincrement())
-  nome              String                           @db.VarChar(255)
-  endereco          String?                          @db.VarChar(500)
-  latitude          Decimal                          @db.Decimal(10, 8) // NOT NULL - obrigatório para mapa
-  longitude         Decimal                          @db.Decimal(11, 8) // NOT NULL - obrigatório para mapa
-  id_origem         String                           @unique @db.VarChar(100)
-  ativo             Boolean                          @default(true)
-  created_at        DateTime                         @default(now())
-  updated_at        DateTime                         @updatedAt
-  
+  id                  Int                              @id @default(autoincrement())
+  nome                String                           @db.VarChar(255)
+  endereco            String?                          @db.VarChar(500)
+  bairro              String?                          @db.VarChar(100)
+  latitude            Decimal                          @db.Decimal(10, 8) // NOT NULL - obrigatório para mapa
+  longitude           Decimal                          @db.Decimal(11, 8) // NOT NULL - obrigatório para mapa
+  telefone            String?                          @db.VarChar(100)
+  whatsapp            String?                          @db.VarChar(100)
+  enfermeiro_responsavel String?                       @db.VarChar(255)
+  horario_atendimento String?                          @db.Text
+  imagem_url          String?                          @db.VarChar(500)
+  icone_url           String?                          @db.VarChar(500)
+  id_origem           String                           @unique @db.VarChar(100)
+  ativo               Boolean                          @default(true)
+  created_at          DateTime                         @default(now())
+  updated_at          DateTime                         @updatedAt
+
   // Relações
-  especialidades    Junction_Unidade_Especialidade[]
-  
+  especialidades      Junction_Unidade_Especialidade[]
+  medicos             Junction_Unidade_Medico[]
+  redes_sociais       PROD_Unidade_RedeSocial[]
+
   @@index([ativo])
   @@index([latitude, longitude])
   @@map("PROD_Unidade_Saude")
@@ -74,10 +88,11 @@ model PROD_Medico {
   ativo             Boolean                          @default(true)
   created_at        DateTime                         @default(now())
   updated_at        DateTime                         @updatedAt
-  
+
   // Relações
   especialidades    Junction_Medico_Especialidade[]
-  
+  unidades          Junction_Unidade_Medico[]
+
   @@index([ativo])
   @@map("PROD_Medico")
 }
@@ -88,13 +103,28 @@ model PROD_Especialidade {
   ativo             Boolean                          @default(true)
   created_at        DateTime                         @default(now())
   updated_at        DateTime                         @updatedAt
-  
+
   // Relações
   unidades          Junction_Unidade_Especialidade[]
   medicos           Junction_Medico_Especialidade[]
-  
+  mapeamentos       Especialidade_Mapeamento[]       @relation("EspecialidadeNormalizada")
+
   @@index([ativo])
   @@map("PROD_Especialidade")
+}
+
+model PROD_Unidade_RedeSocial {
+  id          Int                 @id @default(autoincrement())
+  id_unidade  Int
+  nome_rede   String              @db.VarChar(50)
+  url_perfil  String              @db.VarChar(500)
+  created_at  DateTime            @default(now())
+  updated_at  DateTime            @updatedAt
+
+  unidade     PROD_Unidade_Saude  @relation(fields: [id_unidade], references: [id], onDelete: Cascade)
+
+  @@index([id_unidade])
+  @@map("PROD_Unidade_RedeSocial")
 }
 
 // ============================================================================
@@ -117,12 +147,48 @@ model Junction_Medico_Especialidade {
   id_medico         Int
   id_especialidade  Int
   created_at        DateTime                         @default(now())
-  
+
   medico            PROD_Medico                      @relation(fields: [id_medico], references: [id], onDelete: Cascade)
   especialidade     PROD_Especialidade               @relation(fields: [id_especialidade], references: [id], onDelete: Cascade)
-  
+
   @@id([id_medico, id_especialidade])
   @@map("Junction_Medico_Especialidade")
+}
+
+model Junction_Unidade_Medico {
+  id_unidade        Int
+  id_medico         Int
+  created_at        DateTime                         @default(now())
+
+  unidade           PROD_Unidade_Saude               @relation(fields: [id_unidade], references: [id], onDelete: Cascade)
+  medico            PROD_Medico                      @relation(fields: [id_medico], references: [id], onDelete: Cascade)
+
+  @@id([id_unidade, id_medico])
+  @@index([id_unidade])
+  @@index([id_medico])
+  @@map("Junction_Unidade_Medico")
+}
+
+// ============================================================================
+// NORMALIZATION SYSTEM - Sistema de normalização de especialidades
+// ============================================================================
+
+model Especialidade_Mapeamento {
+  id                          Int                  @id @default(autoincrement())
+  especialidade_bruta         String               @unique @db.VarChar(255)
+  especialidade_normalizada   String               @db.VarChar(255)
+  criado_por                  Int
+  criado_em                   DateTime             @default(now())
+  atualizado_em               DateTime             @updatedAt
+
+  // Relações
+  usuario                     User                 @relation(fields: [criado_por], references: [id])
+  especialidade               PROD_Especialidade?  @relation("EspecialidadeNormalizada", fields: [especialidade_normalizada], references: [nome])
+
+  @@index([especialidade_bruta])
+  @@index([especialidade_normalizada])
+  @@index([criado_por])
+  @@map("Especialidade_Mapeamento")
 }
 
 // ============================================================================
@@ -139,10 +205,11 @@ model User {
   created_at        DateTime                         @default(now())
   updated_at        DateTime                         @updatedAt
   last_login        DateTime?
-  
+
   // Relações
   audit_logs        AUDIT_LOG[]
-  
+  mapeamentos       Especialidade_Mapeamento[]
+
   @@index([username])
   @@index([email])
   @@index([role])
@@ -210,4 +277,20 @@ enum ETLStatus {
   completed
   failed
   cancelled
+}
+
+// ============================================================================
+// BAIRROS - Gerenciamento de bairros de Corumbá
+// ============================================================================
+
+model PROD_Bairro {
+  id         Int      @id @default(autoincrement())
+  nome       String   @unique @db.VarChar(100)
+  ativo      Boolean  @default(true)
+  created_at DateTime @default(now())
+  updated_at DateTime @updatedAt
+
+  @@index([nome])
+  @@index([ativo])
+  @@map("PROD_Bairro")
 }

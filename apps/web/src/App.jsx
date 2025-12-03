@@ -9,6 +9,8 @@ import StagingPage from './pages/admin/StagingPage'
 import UnidadesPage from './pages/admin/UnidadesPage'
 import MedicosPage from './pages/admin/MedicosPage'
 import EspecialidadesPage from './pages/admin/EspecialidadesPage'
+import EspecialidadesNormalizacaoPage from './pages/admin/EspecialidadesNormalizacaoPage'
+import BairrosPage from './pages/admin/BairrosPage'
 import UsersPage from './pages/admin/UsersPage'
 import AuditPage from './pages/admin/AuditPage'
 import ETLPage from './pages/admin/ETLPage'
@@ -33,6 +35,8 @@ function App() {
           <Route path="unidades" element={<UnidadesPage />} />
           <Route path="medicos" element={<MedicosPage />} />
           <Route path="especialidades" element={<EspecialidadesPage />} />
+          <Route path="especialidades-normalizacao" element={<EspecialidadesNormalizacaoPage />} />
+          <Route path="bairros" element={<BairrosPage />} />
           <Route path="users" element={<SuperadminRoute><UsersPage /></SuperadminRoute>} />
           <Route path="audit" element={<SuperadminRoute><AuditPage /></SuperadminRoute>} />
           <Route path="etl" element={<SuperadminRoute><ETLPage /></SuperadminRoute>} />

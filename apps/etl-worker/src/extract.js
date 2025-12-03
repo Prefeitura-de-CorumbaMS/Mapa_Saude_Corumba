@@ -43,7 +43,8 @@ function createSourcePool() {
  * PostgreSQL usa sintaxe diferente do MySQL (ex: TRUE ao invés de 1)
  */
 const EXTRACTION_QUERY = `
-  SELECT 
+  SELECT
+    MD5(CONCAT(COALESCE("Profissional", ''), '|', COALESCE("Unidade de Saude", ''), '|', COALESCE("Especialidade", ''))) as id_origem,
     "Profissional" as nome_medico,
     "Unidade de Saude" as nome_unidade,
     "Especialidade" as nome_especialidade

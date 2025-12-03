@@ -52,31 +52,54 @@ async function loadToStaging(records) {
 
 /**
  * Carrega um lote de registros usando transação
+ * PROTEÇÃO: Não sobrescreve registros já validados
  */
 async function loadBatch(batch) {
   // Usar transação para garantir atomicidade
   await prisma.$transaction(async (tx) => {
     for (const record of batch) {
       try {
-        // UPSERT: Atualiza se existe, cria se não existe
-        await tx.sTAGING_Info_Origem.upsert({
-          where: { nome_medico: record.nome_medico_bruto,
-                    nome_unidade: record.nome_unidade_bruto,
-                    nome_especialidade: record.nome_especialidade_bruto,
-                  },
-          update: {
+        // Verificar se o registro já existe
+        const existingRecord = await tx.sTAGING_Info_Origem.findFirst({
+          where: {
             nome_medico_bruto: record.nome_medico_bruto,
             nome_unidade_bruto: record.nome_unidade_bruto,
             nome_especialidade_bruto: record.nome_especialidade_bruto,
-            // Manter status_processamento se já foi validado
-            status_processamento: {
-              set: 'pendente',
-            },
+          },
+          select: {
+            id: true,
+            status_processamento: true,
+          },
+        });
+
+        // Se o registro existe e já foi validado, NÃO atualizar
+        if (existingRecord && existingRecord.status_processamento === 'validado') {
+          logger.debug('Skipping validated record', {
+            id: existingRecord.id,
+            nome_medico: record.nome_medico_bruto,
+            nome_unidade: record.nome_unidade_bruto,
+          });
+          continue;
+        }
+
+        // Se não existe, criar. Se existe mas não está validado, atualizar
+        await tx.sTAGING_Info_Origem.upsert({
+          where: {
+            id: existingRecord?.id || 0, // Se não existe, usa 0 para forçar create
+          },
+          update: {
+            // Atualizar apenas campos brutos, manter dados enriquecidos
+            nome_medico_bruto: record.nome_medico_bruto,
+            nome_unidade_bruto: record.nome_unidade_bruto,
+            nome_especialidade_bruto: record.nome_especialidade_bruto,
+            // Manter status pendente (só chega aqui se não for validado)
+            status_processamento: 'pendente',
           },
           create: {
             nome_medico_bruto: record.nome_medico_bruto,
             nome_unidade_bruto: record.nome_unidade_bruto,
             nome_especialidade_bruto: record.nome_especialidade_bruto,
+            id_origem: record.id_origem,
             status_processamento: 'pendente',
           },
         });
