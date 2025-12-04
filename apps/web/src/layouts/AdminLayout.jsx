@@ -15,6 +15,7 @@ import {
   MenuFoldOutlined,
   MenuUnfoldOutlined,
   TagsOutlined,
+  PictureOutlined,
 } from '@ant-design/icons'
 import { logout } from '../store/slices/authSlice'
 
@@ -30,12 +31,13 @@ export default function AdminLayout() {
   const isSuperadmin = user?.role === 'superadmin'
   
   const menuItems = [
-    { key: '/admin/dashboard', icon: <DashboardOutlined />, label: 'Dashboard' },
-    { key: '/admin/staging', icon: <DatabaseOutlined />, label: 'Staging (Arquivo)' },
+    { key: '/admin/dashboard', icon: <DashboardOutlined />, label: 'Painel' },
+    { key: '/admin/staging', icon: <DatabaseOutlined />, label: 'Área de Staging (Arquivo)' },
     { key: '/admin/unidades', icon: <EnvironmentOutlined />, label: 'Unidades' },
     { key: '/admin/medicos', icon: <MedicineBoxOutlined />, label: 'Médicos' },
     { key: '/admin/especialidades', icon: <TeamOutlined />, label: 'Especialidades' },
     { key: '/admin/especialidades-normalizacao', icon: <TagsOutlined />, label: 'Normalização (Arquivo)' },
+    { key: '/admin/icones', icon: <PictureOutlined />, label: 'Ícones' },
     { key: '/admin/bairros', icon: <EnvironmentOutlined />, label: 'Bairros' },
     ...(isSuperadmin ? [
       { key: '/admin/users', icon: <UserOutlined />, label: 'Usuários' },
@@ -72,7 +74,7 @@ export default function AdminLayout() {
           fontSize: collapsed ? '16px' : '18px',
           fontWeight: 'bold'
         }}>
-          {collapsed ? 'SIGLS' : 'SIGLS Admin'}
+          {collapsed ? 'SIGLS' : 'Painel SIGLS'}
         </div>
         <Menu
           theme="dark"

@@ -22,9 +22,10 @@ import {
   useDeleteUnidadeRedeSocialMutation,
   useUploadUnidadeImagemMutation,
   useDeleteUnidadeImagemMutation,
-  useUploadIconeMutation,
   useGetBairrosQuery,
+  useGetIconesQuery,
 } from '../../store/slices/apiSlice'
+import LocationPicker from '../../components/LocationPicker'
 
 const { Title, Text } = Typography
 const { TextArea } = Input
@@ -41,6 +42,14 @@ const REDES_SOCIAIS_OPTIONS = [
   { value: 'Outro', label: 'Outro', icon: <LinkOutlined /> },
 ]
 
+// Helper para obter URL completa da imagem
+const getFullImageUrl = (url) => {
+  if (!url) return ''
+  if (url.startsWith('http')) return url
+  const apiBaseUrl = import.meta.env.VITE_API_URL?.replace('/api', '') || 'http://localhost:3001'
+  return `${apiBaseUrl}${url}`
+}
+
 export default function UnidadesPage() {
   const [page, setPage] = useState(1)
   const [isModalOpen, setIsModalOpen] = useState(false)
@@ -52,18 +61,17 @@ export default function UnidadesPage() {
   const [imageUrl, setImageUrl] = useState(null)
   const [uploading, setUploading] = useState(false)
   const [selectedIcon, setSelectedIcon] = useState(null)
-  const [uploadingIcon, setUploadingIcon] = useState(false)
   const [form] = Form.useForm()
 
   // API hooks
   const { data, isLoading } = useGetUnidadesQuery({ page, limit: 20 })
   const { data: medicosData } = useGetMedicosQuery({ ativo: 'true', limit: 1000 })
   const { data: bairrosData } = useGetBairrosQuery({ ativo: true })
+  const { data: iconesData } = useGetIconesQuery({ ativo: 'true' })
   const [createUnidade, { isLoading: creating }] = useCreateUnidadeMutation()
   const [updateUnidade, { isLoading: updating }] = useUpdateUnidadeMutation()
   const [deleteUnidade] = useDeleteUnidadeMutation()
   const [uploadUnidadeImagem] = useUploadUnidadeImagemMutation()
-  const [uploadIcone] = useUploadIconeMutation()
 
   // Fetch unit medicos when editing
   const { data: unidadeMedicosData } = useGetUnidadeMedicosQuery(editingUnidade?.id, {
@@ -96,24 +104,6 @@ export default function UnidadesPage() {
       message.error(error.data?.error || 'Erro ao enviar imagem')
     } finally {
       setUploading(false)
-    }
-    return false
-  }
-
-  // Handle upload de ícone
-  const handleUploadIcone = async (file) => {
-    setUploadingIcon(true)
-    const formData = new FormData()
-    formData.append('icone', file)
-
-    try {
-      const result = await uploadIcone(formData).unwrap()
-      setSelectedIcon(result.data.url)
-      message.success('Ícone enviado com sucesso!')
-    } catch (error) {
-      message.error(error.data?.error || 'Erro ao enviar ícone')
-    } finally {
-      setUploadingIcon(false)
     }
     return false
   }
@@ -282,6 +272,7 @@ export default function UnidadesPage() {
       const newSelected = [...selectedMedicos, medicoId]
       setSelectedMedicos(newSelected)
       form.setFieldsValue({ medicos: newSelected })
+      message.success('Médico adicionado à equipe!')
     }
   }
 
@@ -290,6 +281,7 @@ export default function UnidadesPage() {
     const newSelected = selectedMedicos.filter(id => id !== medicoId)
     setSelectedMedicos(newSelected)
     form.setFieldsValue({ medicos: newSelected })
+    message.info('Médico removido da lista. Clique em "Atualizar" para salvar as alterações.')
   }
 
   // Handle adding rede social
@@ -500,7 +492,8 @@ export default function UnidadesPage() {
         open={isModalOpen}
         onCancel={handleCancel}
         footer={null}
-        width={800}
+        width={900}
+        style={{ top: 20 }}
       >
         <Form
           form={form}
@@ -541,71 +534,58 @@ export default function UnidadesPage() {
             </Select>
           </Form.Item>
 
-          <Space style={{ width: '100%' }} size="middle">
-            <Form.Item
-              label="Latitude"
-              name="latitude"
-              rules={[{ required: true, message: 'Latitude obrigatória' }]}
-              style={{ marginBottom: 0 }}
-            >
-              <InputNumber
-                placeholder="-19.0078"
-                step={0.000001}
-                precision={8}
-                style={{ width: 200 }}
-              />
-            </Form.Item>
+          <Form.Item
+            label="Status"
+            name="ativo"
+            valuePropName="checked"
+          >
+            <Switch checkedChildren="Ativo" unCheckedChildren="Inativo" />
+          </Form.Item>
 
-            <Form.Item
-              label="Longitude"
-              name="longitude"
-              rules={[{ required: true, message: 'Longitude obrigatória' }]}
-              style={{ marginBottom: 0 }}
-            >
-              <InputNumber
-                placeholder="-57.6547"
-                step={0.000001}
-                precision={8}
-                style={{ width: 200 }}
-              />
-            </Form.Item>
+          {/* Hidden fields for latitude/longitude */}
+          <Form.Item name="latitude" hidden rules={[{ required: true, message: 'Selecione a localização no mapa' }]}>
+            <InputNumber />
+          </Form.Item>
+          <Form.Item name="longitude" hidden rules={[{ required: true, message: 'Selecione a localização no mapa' }]}>
+            <InputNumber />
+          </Form.Item>
 
-            <Form.Item
-              label="Status"
-              name="ativo"
-              valuePropName="checked"
-              style={{ marginBottom: 0 }}
-            >
-              <Switch checkedChildren="Ativo" unCheckedChildren="Inativo" />
-            </Form.Item>
-          </Space>
+          {/* Map Location Picker */}
+          <LocationPicker
+            latitude={form.getFieldValue('latitude')}
+            longitude={form.getFieldValue('longitude')}
+            onChange={(coords) => {
+              form.setFieldsValue({
+                latitude: coords.latitude,
+                longitude: coords.longitude,
+              })
+            }}
+          />
 
           <Form.Item label="Telefone" name="telefone">
             <Input placeholder="(67) 3234-5678" />
           </Form.Item>
 
-          <Form.Item label="WhatsApp" name="whatsapp">
-            <Input
-              placeholder="(67) 99999-9999"
-              addonAfter={
-                <Button
-                  type="link"
-                  icon={<WhatsAppOutlined />}
-                  size="small"
-                  onClick={() => {
-                    const whatsapp = form.getFieldValue('whatsapp');
-                    if (whatsapp) {
-                      const cleanNumber = whatsapp.replace(/\D/g, '');
-                      window.open(`https://wa.me/55${cleanNumber}`, '_blank');
-                    } else {
-                      message.warning('Por favor, insira um número de WhatsApp primeiro');
-                    }
-                  }}
-                >
-                  Abrir WhatsApp
-                </Button>
-              }
-            />
+          <Form.Item label="WhatsApp">
+            <Space.Compact style={{ width: '100%' }}>
+              <Form.Item name="whatsapp" noStyle>
+                <Input placeholder="(67) 99999-9999" />
+              </Form.Item>
+              <Button
+                icon={<WhatsAppOutlined />}
+                onClick={() => {
+                  const whatsapp = form.getFieldValue('whatsapp');
+                  if (whatsapp) {
+                    const cleanNumber = whatsapp.replace(/\D/g, '');
+                    window.open(`https://wa.me/55${cleanNumber}`, '_blank');
+                  } else {
+                    message.warning('Por favor, insira um número de WhatsApp primeiro');
+                  }
+                }}
+              >
+                Abrir
+              </Button>
+            </Space.Compact>
           </Form.Item>
 
           <Form.Item label="Enfermeiro(a) Responsável" name="enfermeiro_responsavel">
@@ -630,7 +610,7 @@ export default function UnidadesPage() {
                 <div style={{ marginBottom: 12 }}>
                   <img
                     src={imageUrl}
-                    alt="Preview"
+                    alt="Pré-visualização"
                     style={{
                       width: '100%',
                       maxHeight: '200px',
@@ -668,16 +648,10 @@ export default function UnidadesPage() {
           <Form.Item label="Ícone do Marcador no Mapa">
             <Space direction="vertical" style={{ width: '100%' }}>
               <div style={{ fontSize: '12px', color: '#666', marginBottom: 8 }}>
-                Escolha um dos ícones padrão ou adicione um novo:
+                Escolha um dos ícones disponíveis:
               </div>
               <Space size="large" wrap>
-                {[
-                  { url: '/uploads/icon_mod_UBS.png', label: 'UBS' },
-                  { url: '/uploads/icon_mod_Pronto_Atendimento.png', label: 'Pronto Atendimento' },
-                  { url: '/uploads/icon_mod_Doacao.png', label: 'Hemonúcleo' },
-                  { url: '/uploads/Icone_Academia_da_Saúde.png', label: 'Academia de Saúde' },
-                  { url: '/uploads/icone_centros_especializados.png', label: 'Centros Especializados' },
-                ].map((icon) => (
+                {(iconesData?.data || []).map((icon) => (
                   <div
                     key={icon.url}
                     onClick={() => setSelectedIcon(icon.url)}
@@ -698,30 +672,15 @@ export default function UnidadesPage() {
                     }}
                   >
                     <img
-                      src={icon.url}
-                      alt={icon.label}
+                      src={getFullImageUrl(icon.url)}
+                      alt={icon.nome}
                       style={{ maxWidth: '50px', maxHeight: '50px', objectFit: 'contain' }}
                     />
                     <span style={{ fontSize: '11px', color: '#666', textAlign: 'center', fontWeight: selectedIcon === icon.url ? 'bold' : 'normal' }}>
-                      {icon.label}
+                      {icon.nome}
                     </span>
                   </div>
                 ))}
-                <Upload
-                  beforeUpload={handleUploadIcone}
-                  maxCount={1}
-                  accept="image/svg+xml,image/png"
-                  showUploadList={false}
-                >
-                  <Button
-                    type="dashed"
-                    icon={<UploadOutlined />}
-                    loading={uploadingIcon}
-                    style={{ width: '100px', height: '100px' }}
-                  >
-                    {uploadingIcon ? 'Enviando...' : 'Adicionar'}
-                  </Button>
-                </Upload>
               </Space>
               {selectedIcon && (
                 <div style={{ marginTop: 8 }}>
@@ -729,8 +688,8 @@ export default function UnidadesPage() {
                   <span style={{ fontSize: '12px', color: '#666' }}>{selectedIcon}</span>
                 </div>
               )}
-              <div style={{ fontSize: '12px', color: '#999' }}>
-                Formatos aceitos para novos ícones: SVG, PNG (máx. 500KB)
+              <div style={{ fontSize: '12px', color: '#1890ff', marginTop: 8 }}>
+                💡 Para adicionar novos ícones, acesse o menu <a href="/admin/icones" target="_blank" style={{ fontWeight: 'bold' }}>Ícones</a>
               </div>
             </Space>
           </Form.Item>
@@ -764,6 +723,14 @@ export default function UnidadesPage() {
           {/* Selected Doctors List */}
           {getSelectedMedicosData().length > 0 && (
             <>
+              <Alert
+                message="Atenção"
+                description="Após adicionar ou remover médicos, clique no botão 'Atualizar' ou 'Criar' no final da página para salvar as alterações."
+                type="info"
+                showIcon
+                closable
+                style={{ marginBottom: 12 }}
+              />
               <Card
                 size="small"
                 title={

@@ -2,133 +2,148 @@
 -- Script de Import Seguro de Unidades CNES
 -- ============================================================================
 -- Atualiza apenas campos vazios/NULL, preserva dados existentes
--- Execução: psql -U postgres -d mapa_saude -f scripts/import_unidades_safe.sql
+-- Banco: MySQL
+-- Execução: mysql -u root -p mapa_saude < scripts/import_unidades_safe.sql
 -- ============================================================================
 
-BEGIN;
+START TRANSACTION;
 
 -- Criar tabela temporária
-CREATE TEMP TABLE unidades_import_tmp (
-  cnes TEXT,
-  nome TEXT,
-  endereco TEXT,
-  telefone TEXT,
-  whatsapp TEXT,
-  detail_url TEXT
+CREATE TEMPORARY TABLE unidades_import_tmp (
+  cnes VARCHAR(10),
+  nome VARCHAR(255),
+  endereco VARCHAR(500),
+  telefone VARCHAR(100),
+  whatsapp VARCHAR(100),
+  detail_url VARCHAR(500)
 );
 
 -- IMPORTANTE: Ajuste o caminho absoluto do CSV antes de executar
-\copy unidades_import_tmp FROM 'C:/dev/Mapa_Saude_Corumba/uploads/processed/unidades_cnes_final.csv' CSV HEADER ENCODING 'UTF8';
+-- Carregar dados do CSV
+LOAD DATA LOCAL INFILE 'C:/dev/Mapa_Saude_Corumba/uploads/processed/unidades_cnes_final.csv'
+INTO TABLE unidades_import_tmp
+FIELDS TERMINATED BY ',' 
+ENCLOSED BY '"'
+LINES TERMINATED BY '\n'
+IGNORE 1 ROWS
+(cnes, nome, endereco, telefone, whatsapp, detail_url);
 
 -- ============================================================================
 -- VALIDAÇÕES PRÉ-IMPORT
 -- ============================================================================
 
-\echo '=== VALIDAÇÕES ==='
-\echo ''
+SELECT '=== VALIDAÇÕES ===' AS status;
 
-SELECT 'Total de unidades a importar: ' || COUNT(*) AS status FROM unidades_import_tmp;
+SELECT CONCAT('Total de unidades a importar: ', COUNT(*)) AS status 
+FROM unidades_import_tmp;
 
-SELECT 'CNES duplicados no CSV: ' || COUNT(*) AS status 
+SELECT CONCAT('CNES duplicados no CSV: ', COUNT(*)) AS status 
 FROM (
-  SELECT cnes, COUNT(*) 
+  SELECT cnes, COUNT(*) AS cnt
   FROM unidades_import_tmp 
   GROUP BY cnes 
-  HAVING COUNT(*) > 1
+  HAVING cnt > 1
 ) d;
 
-SELECT 'Unidades que já existem no sistema: ' || COUNT(*) AS status
+SELECT CONCAT('Unidades que já existem no sistema: ', COUNT(*)) AS status
 FROM unidades_import_tmp i 
-WHERE EXISTS (SELECT 1 FROM "Unidade" u WHERE u.cnes = i.cnes);
+WHERE EXISTS (SELECT 1 FROM PROD_Unidade_Saude u WHERE u.id_origem = i.cnes);
 
-SELECT 'Unidades novas a serem inseridas: ' || COUNT(*) AS status
+SELECT CONCAT('Unidades novas a serem inseridas: ', COUNT(*)) AS status
 FROM unidades_import_tmp i 
-WHERE NOT EXISTS (SELECT 1 FROM "Unidade" u WHERE u.cnes = i.cnes);
+WHERE NOT EXISTS (SELECT 1 FROM PROD_Unidade_Saude u WHERE u.id_origem = i.cnes);
 
-\echo ''
-\echo '=== Amostra de dados a importar (5 primeiras) ==='
+SELECT '=== Amostra de dados a importar (5 primeiras) ===' AS status;
 SELECT cnes, LEFT(nome, 40) AS nome, LEFT(endereco, 50) AS endereco, whatsapp 
 FROM unidades_import_tmp 
 LIMIT 5;
 
-\echo ''
-\echo '=== EXECUTANDO UPSERT ==='
+SELECT '=== EXECUTANDO UPSERT ===' AS status;
 
 -- ============================================================================
 -- UPSERT DE UNIDADES
 -- ============================================================================
--- Estratégia: 
--- - Insere novas unidades
--- - Atualiza apenas campos vazios (NULL ou '') em unidades existentes
--- - NÃO sobrescreve 'nome' para preservar customizações
+-- IMPORTANTE: Este script atualiza PROD_Unidade_Saude
+-- Usa id_origem (CNES) como chave de matching
+-- 
+-- NOTA CRÍTICA: latitude/longitude são obrigatórios (NOT NULL no schema)
+-- Unidades sem coordenadas precisam ser geocodificadas antes do import
+-- Por ora, usamos coordenadas genéricas de Corumbá como fallback
 -- ============================================================================
 
-INSERT INTO "Unidade" (cnes, nome, endereco, telefone, whatsapp, "createdAt", "updatedAt")
+-- Atualizar unidades existentes (apenas campos vazios)
+UPDATE PROD_Unidade_Saude u
+INNER JOIN unidades_import_tmp i ON u.id_origem = i.cnes
+SET 
+  u.endereco = IF(u.endereco IS NULL OR u.endereco = '', i.endereco, u.endereco),
+  u.telefone = IF(u.telefone IS NULL OR u.telefone = '', i.telefone, u.telefone),
+  u.whatsapp = IF(u.whatsapp IS NULL OR u.whatsapp = '', i.whatsapp, u.whatsapp),
+  u.updated_at = NOW();
+  -- NOTA: 'nome' NÃO é atualizado para preservar customizações manuais
+
+-- Inserir novas unidades (com coordenadas genéricas - REQUER GEOCODIFICAÇÃO posterior)
+INSERT INTO PROD_Unidade_Saude (
+  nome, endereco, telefone, whatsapp, 
+  latitude, longitude, id_origem, 
+  ativo, created_at, updated_at
+)
 SELECT 
-  cnes, 
-  nome, 
-  endereco, 
-  telefone, 
-  whatsapp,
+  i.nome,
+  i.endereco,
+  i.telefone,
+  i.whatsapp,
+  -19.0078, -- Latitude genérica de Corumbá centro (TEMPORÁRIO)
+  -57.6547, -- Longitude genérica de Corumbá centro (TEMPORÁRIO)
+  i.cnes,
+  1,
   NOW(),
   NOW()
-FROM unidades_import_tmp
-ON CONFLICT (cnes) DO UPDATE SET
-  endereco = CASE 
-    WHEN "Unidade".endereco IS NULL OR "Unidade".endereco = '' 
-    THEN EXCLUDED.endereco 
-    ELSE "Unidade".endereco 
-  END,
-  telefone = CASE 
-    WHEN "Unidade".telefone IS NULL OR "Unidade".telefone = '' 
-    THEN EXCLUDED.telefone 
-    ELSE "Unidade".telefone 
-  END,
-  whatsapp = CASE 
-    WHEN "Unidade".whatsapp IS NULL OR "Unidade".whatsapp = '' 
-    THEN EXCLUDED.whatsapp 
-    ELSE "Unidade".whatsapp 
-  END,
-  "updatedAt" = NOW();
-  -- NOTA: 'nome' NÃO é atualizado para preservar customizações manuais
+FROM unidades_import_tmp i
+WHERE NOT EXISTS (
+  SELECT 1 FROM PROD_Unidade_Saude u WHERE u.id_origem = i.cnes
+);
 
 -- ============================================================================
 -- VALIDAÇÕES PÓS-IMPORT
 -- ============================================================================
 
-\echo ''
-\echo '=== RESULTADO DO IMPORT ==='
+SELECT '=== RESULTADO DO IMPORT ===' AS status;
 
-SELECT 'Total de unidades no sistema após import: ' || COUNT(*) AS status FROM "Unidade";
+SELECT CONCAT('Total de unidades no sistema após import: ', COUNT(*)) AS status 
+FROM PROD_Unidade_Saude;
 
-SELECT 'Unidades com endereço preenchido: ' || COUNT(*) AS status 
-FROM "Unidade" 
+SELECT CONCAT('Unidades com endereço preenchido: ', COUNT(*)) AS status 
+FROM PROD_Unidade_Saude 
 WHERE endereco IS NOT NULL AND endereco != '';
 
-SELECT 'Unidades com WhatsApp preenchido: ' || COUNT(*) AS status 
-FROM "Unidade" 
+SELECT CONCAT('Unidades com WhatsApp preenchido: ', COUNT(*)) AS status 
+FROM PROD_Unidade_Saude 
 WHERE whatsapp IS NOT NULL AND whatsapp != '';
 
-\echo ''
-\echo '=== Amostra de unidades atualizadas (5 aleatórias) ==='
-SELECT cnes, LEFT(nome, 40) AS nome, LEFT(endereco, 40) AS endereco, whatsapp 
-FROM "Unidade" 
-WHERE cnes IN (SELECT cnes FROM unidades_import_tmp)
-ORDER BY RANDOM()
+SELECT '=== Amostra de unidades atualizadas (5 aleatórias) ===' AS status;
+SELECT id_origem AS cnes, LEFT(nome, 40) AS nome, LEFT(endereco, 40) AS endereco, whatsapp 
+FROM PROD_Unidade_Saude 
+WHERE id_origem IN (SELECT cnes FROM unidades_import_tmp)
+ORDER BY RAND()
 LIMIT 5;
+
+-- ============================================================================
+-- ATENÇÃO: GEOCODIFICAÇÃO NECESSÁRIA
+-- ============================================================================
+SELECT '=== UNIDADES QUE PRECISAM DE GEOCODIFICAÇÃO ===' AS status;
+SELECT id_origem AS cnes, nome, endereco
+FROM PROD_Unidade_Saude
+WHERE id_origem IN (SELECT cnes FROM unidades_import_tmp)
+  AND (latitude = -19.0078 AND longitude = -57.6547)
+LIMIT 10;
 
 -- ============================================================================
 -- DECISÃO FINAL
 -- ============================================================================
 
-\echo ''
-\echo '=== ATENÇÃO ==='
-\echo 'Revise os resultados acima.'
-\echo 'Se estiver tudo OK, substitua ROLLBACK por COMMIT abaixo.'
-\echo ''
-
--- Descomente a linha abaixo para confirmar as mudanças:
+-- Revise os resultados acima.
+-- Se estiver tudo OK, descomente a linha abaixo:
 -- COMMIT;
 
--- Mantém rollback por segurança (remova esta linha após revisar):
+-- Mantém rollback por segurança:
 ROLLBACK;

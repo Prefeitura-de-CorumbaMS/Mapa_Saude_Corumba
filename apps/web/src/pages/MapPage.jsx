@@ -17,7 +17,8 @@ import {
   LinkOutlined,
 } from '@ant-design/icons'
 import L from 'leaflet'
-import { useGetUnidadesQuery, useGetUnidadeMedicosQuery, useGetBairrosQuery, useGetEspecialidadesQuery, useGetLastUpdateQuery } from '../store/slices/apiSlice'
+import { useGetUnidadesQuery, useGetUnidadeMedicosQuery, useGetBairrosQuery, useGetEspecialidadesQuery, useGetLastUpdateQuery, useGetIconesQuery } from '../store/slices/apiSlice'
+import MapLegend from '../components/MapLegend'
 import 'leaflet/dist/leaflet.css'
 
 // Custom Marker component to handle zoom on click
@@ -31,16 +32,16 @@ const CustomMarker = ({ unidade, onClick, customIcon, isSelected }) => {
   }
 
   // Aumentar o tamanho do ícone se estiver selecionado
-  const iconSize = isSelected ? [36, 59] : [25, 41]
-  const iconAnchor = isSelected ? [18, 59] : [12, 41]
-  const shadowSize = isSelected ? [60, 60] : [41, 41]
+  const iconSize = isSelected ? [48, 72] : [25, 41]
+  const iconAnchor = isSelected ? [24, 72] : [12, 41]
+  const shadowSize = isSelected ? [80, 80] : [41, 41]
 
   const icon = customIcon ? (
     isSelected ? L.icon({
       iconUrl: customIcon.options.iconUrl,
-      iconSize: [36, 54],
-      iconAnchor: [18, 54],
-      popupAnchor: [0, -54],
+      iconSize: [48, 72],
+      iconAnchor: [24, 72],
+      popupAnchor: [0, -72],
     }) : customIcon
   ) : L.icon({
     iconUrl: '/marker-icon.png',
@@ -128,7 +129,9 @@ export default function MapPage() {
   const [searchType, setSearchType] = useState(null) // 'bairro', 'unidade', 'especialidade'
   const [searchValue, setSearchValue] = useState(null)
 
-  const { data, isLoading, isError, error } = useGetUnidadesQuery()
+  const { data, isLoading, isError, error } = useGetUnidadesQuery(undefined, {
+    refetchOnMountOrArgChange: 30, // Refetch se dados tiverem mais de 30 segundos
+  })
   const { data: medicosData, isLoading: medicosLoading } = useGetUnidadeMedicosQuery(
     selectedUnidade?.id,
     { skip: !selectedUnidade }
@@ -136,6 +139,9 @@ export default function MapPage() {
   const { data: bairrosData } = useGetBairrosQuery()
   const { data: especialidadesData } = useGetEspecialidadesQuery()
   const { data: lastUpdateData } = useGetLastUpdateQuery()
+  const { data: iconesData } = useGetIconesQuery({ ativo: 'true' }, {
+    refetchOnMountOrArgChange: 30, // Refetch ícones também
+  })
 
   // Extrair dados antes dos early returns
   const unidades = data?.data || []
@@ -696,76 +702,6 @@ export default function MapPage() {
                     )}
                   </Card>
 
-                  {/* Legenda de Ícones */}
-                  <Card
-                    size="small"
-                    title={
-                      <div style={{
-                        display: 'flex',
-                        alignItems: 'center',
-                        fontWeight: 'bold',
-                        color: '#1890ff'
-                      }}>
-                        <EnvironmentOutlined style={{ marginRight: '8px' }} />
-                        Tipos de Unidades
-                      </div>
-                    }
-                    style={{ marginTop: '16px' }}
-                  >
-                    <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
-                      <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
-                        <img
-                          src="/uploads/icon_mod_UBS.png"
-                          alt="UBS"
-                          style={{ width: '30px', height: '30px', objectFit: 'contain' }}
-                        />
-                        <span style={{ fontSize: '13px', color: '#333' }}>
-                          <strong>UBS</strong> - Unidade Básica de Saúde
-                        </span>
-                      </div>
-                      <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
-                        <img
-                          src="/uploads/icon_mod_Pronto_Atendimento.png"
-                          alt="Pronto Atendimento"
-                          style={{ width: '30px', height: '30px', objectFit: 'contain' }}
-                        />
-                        <span style={{ fontSize: '13px', color: '#333' }}>
-                          <strong>Pronto Atendimento / Socorro</strong>
-                        </span>
-                      </div>
-                      <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
-                        <img
-                          src="/uploads/icon_mod_Doacao.png"
-                          alt="Hemonúcleo"
-                          style={{ width: '30px', height: '30px', objectFit: 'contain' }}
-                        />
-                        <span style={{ fontSize: '13px', color: '#333' }}>
-                          <strong>Hemonúcleo</strong> - Doação de Sangue
-                        </span>
-                      </div>
-                      <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
-                        <img
-                          src="/uploads/Icone_Academia_da_Saúde.png"
-                          alt="Academia de Saúde"
-                          style={{ width: '30px', height: '30px', objectFit: 'contain' }}
-                        />
-                        <span style={{ fontSize: '13px', color: '#333' }}>
-                          <strong>Academia de Saúde</strong>
-                        </span>
-                      </div>
-                      <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
-                        <img
-                          src="/uploads/icone_centros_especializados.png"
-                          alt="Centros Especializados"
-                          style={{ width: '30px', height: '30px', objectFit: 'contain' }}
-                        />
-                        <span style={{ fontSize: '13px', color: '#333' }}>
-                          <strong>Centros Especializados</strong>
-                        </span>
-                      </div>
-                    </div>
-                  </Card>
-
                   {/* Rodapé com informações da fonte de dados */}
                   <div style={{
                     marginTop: '24px',
@@ -823,7 +759,7 @@ export default function MapPage() {
         </div>
 
         {/* Mapa */}
-        <div style={{ flex: 1, height: '100%' }}>
+        <div style={{ flex: 1, height: '100%', position: 'relative' }}>
           <MapContainer
             center={CORUMBA_CONFIG.center}
             zoom={CORUMBA_CONFIG.zoom}
@@ -851,9 +787,9 @@ export default function MapPage() {
                 try {
                   customIcon = L.icon({
                     iconUrl: unidade.icone_url,
-                    iconSize: [24, 36],
-                    iconAnchor: [12, 36],
-                    popupAnchor: [0, -36],
+                    iconSize: [32, 48],
+                    iconAnchor: [16, 48],
+                    popupAnchor: [0, -48],
                   });
                 } catch (error) {
                   console.error('Erro ao criar ícone para unidade:', unidade.nome, error);
@@ -873,6 +809,9 @@ export default function MapPage() {
               )
             })}
           </MapContainer>
+
+          {/* Legenda do Mapa */}
+          <MapLegend unidades={filteredUnidades} iconesData={iconesData} />
         </div>
 
         {/* Modal de Médicos */}

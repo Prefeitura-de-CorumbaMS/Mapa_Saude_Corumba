@@ -2,22 +2,29 @@
 -- Script de Import Seguro de Profissionais e Vínculos com Unidades
 -- ============================================================================
 -- Vincula profissionais às unidades por CNES, preserva dados existentes
--- Execução: psql -U postgres -d mapa_saude -f scripts/import_profissionais_safe.sql
+-- Banco: MySQL
+-- Execução: mysql -u root -p mapa_saude < scripts/import_profissionais_safe.sql
 -- ============================================================================
 
-BEGIN;
+START TRANSACTION;
 
 -- Criar tabela temporária
-CREATE TEMP TABLE profissionais_import_tmp (
-  cpf TEXT,
-  cns TEXT,
-  nome TEXT,
-  cbo TEXT,
-  cnes_unidade TEXT
+CREATE TEMPORARY TABLE profissionais_import_tmp (
+  cpf VARCHAR(14),
+  cns VARCHAR(15),
+  nome VARCHAR(255),
+  cbo VARCHAR(10),
+  cnes_unidade VARCHAR(10)
 );
 
 -- IMPORTANTE: Ajuste o caminho absoluto do CSV antes de executar
-\copy profissionais_import_tmp FROM 'C:/dev/Mapa_Saude_Corumba/uploads/processed/profissionais_parsed_clean.csv' CSV HEADER ENCODING 'UTF8';
+LOAD DATA LOCAL INFILE 'C:/dev/Mapa_Saude_Corumba/uploads/processed/profissionais_parsed_clean.csv'
+INTO TABLE profissionais_import_tmp
+FIELDS TERMINATED BY ',' 
+ENCLOSED BY '"'
+LINES TERMINATED BY '\n'
+IGNORE 1 ROWS
+(cpf, cns, nome, cbo, cnes_unidade);
 
 -- ============================================================================
 -- VALIDAÇÕES PRÉ-IMPORT
