@@ -1,7 +1,7 @@
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { Outlet, useNavigate, useLocation } from 'react-router-dom'
 import { useDispatch, useSelector } from 'react-redux'
-import { Layout, Menu, Button, Avatar, Dropdown } from 'antd'
+import { Layout, Menu, Button, Avatar, Dropdown, Drawer } from 'antd'
 import {
   DashboardOutlined,
   DatabaseOutlined,
@@ -23,12 +23,29 @@ const { Header, Sider, Content } = Layout
 
 export default function AdminLayout() {
   const [collapsed, setCollapsed] = useState(false)
+  const [isMobile, setIsMobile] = useState(false)
+  const [mobileMenuOpen, setMobileMenuOpen] = useState(false)
   const navigate = useNavigate()
   const location = useLocation()
   const dispatch = useDispatch()
   const { user } = useSelector((state) => state.auth)
   
   const isSuperadmin = user?.role === 'superadmin'
+
+  useEffect(() => {
+    const checkMobile = () => {
+      const mobile = window.innerWidth <= 768
+      setIsMobile(mobile)
+      if (mobile) {
+        setCollapsed(true) // No mobile, sempre colapsado
+      }
+    }
+
+    checkMobile()
+    window.addEventListener('resize', checkMobile)
+
+    return () => window.removeEventListener('resize', checkMobile)
+  }, [])
   
   const menuItems = [
     { key: '/admin/dashboard', icon: <DashboardOutlined />, label: 'Painel' },
@@ -64,48 +81,93 @@ export default function AdminLayout() {
   
   return (
     <Layout style={{ minHeight: '100vh' }}>
-      <Sider trigger={null} collapsible collapsed={collapsed}>
-        <div style={{ 
-          height: 64, 
-          display: 'flex', 
-          alignItems: 'center', 
-          justifyContent: 'center',
-          color: 'white',
-          fontSize: collapsed ? '16px' : '18px',
-          fontWeight: 'bold'
-        }}>
-          {collapsed ? 'SIGLS' : 'Painel SIGLS'}
-        </div>
-        <Menu
-          theme="dark"
-          mode="inline"
-          selectedKeys={[location.pathname]}
-          items={menuItems}
-          onClick={({ key }) => navigate(key)}
-        />
-      </Sider>
+      {/* Desktop: Sider normal */}
+      {!isMobile && (
+        <Sider trigger={null} collapsible collapsed={collapsed}>
+          <div style={{ 
+            height: 64, 
+            display: 'flex', 
+            alignItems: 'center', 
+            justifyContent: 'center',
+            color: 'white',
+            fontSize: collapsed ? '16px' : '18px',
+            fontWeight: 'bold'
+          }}>
+            {collapsed ? 'SIGLS' : 'Painel SIGLS'}
+          </div>
+          <Menu
+            theme="dark"
+            mode="inline"
+            selectedKeys={[location.pathname]}
+            items={menuItems}
+            onClick={({ key }) => navigate(key)}
+          />
+        </Sider>
+      )}
+
+      {/* Mobile: Drawer */}
+      {isMobile && (
+        <Drawer
+          title="Menu"
+          placement="left"
+          onClose={() => setMobileMenuOpen(false)}
+          open={mobileMenuOpen}
+          bodyStyle={{ padding: 0 }}
+          headerStyle={{ 
+            background: '#001529',
+            color: 'white'
+          }}
+        >
+          <Menu
+            theme="dark"
+            mode="inline"
+            selectedKeys={[location.pathname]}
+            items={menuItems}
+            onClick={({ key }) => {
+              navigate(key)
+              setMobileMenuOpen(false)
+            }}
+          />
+        </Drawer>
+      )}
+
       <Layout>
         <Header style={{ 
-          padding: '0 24px', 
+          padding: isMobile ? '0 12px' : '0 24px', 
           background: '#fff',
           display: 'flex',
           alignItems: 'center',
-          justifyContent: 'space-between'
+          justifyContent: 'space-between',
+          height: isMobile ? '56px' : '64px',
         }}>
           <Button
             type="text"
             icon={collapsed ? <MenuUnfoldOutlined /> : <MenuFoldOutlined />}
-            onClick={() => setCollapsed(!collapsed)}
-            style={{ fontSize: '16px', width: 64, height: 64 }}
+            onClick={() => isMobile ? setMobileMenuOpen(true) : setCollapsed(!collapsed)}
+            style={{ 
+              fontSize: isMobile ? '14px' : '16px', 
+              width: isMobile ? 48 : 64, 
+              height: isMobile ? 48 : 64 
+            }}
           />
           <Dropdown menu={userMenu} placement="bottomRight">
-            <div style={{ cursor: 'pointer', display: 'flex', alignItems: 'center', gap: 8 }}>
-              <Avatar icon={<UserOutlined />} />
-              <span>{user?.username}</span>
+            <div style={{ 
+              cursor: 'pointer', 
+              display: 'flex', 
+              alignItems: 'center', 
+              gap: isMobile ? 4 : 8 
+            }}>
+              <Avatar size={isMobile ? 'small' : 'default'} icon={<UserOutlined />} />
+              {!isMobile && <span>{user?.username}</span>}
             </div>
           </Dropdown>
         </Header>
-        <Content style={{ margin: '24px 16px', padding: 24, background: '#fff', minHeight: 280 }}>
+        <Content style={{ 
+          margin: isMobile ? '12px 8px' : '24px 16px', 
+          padding: isMobile ? 12 : 24, 
+          background: '#fff', 
+          minHeight: 280 
+        }}>
           <Outlet />
         </Content>
       </Layout>

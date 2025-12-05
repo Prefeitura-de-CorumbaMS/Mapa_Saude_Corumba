@@ -236,10 +236,35 @@ export const apiSlice = createApi({
       invalidatesTags: ['Users'],
     }),
 
+    updateUser: builder.mutation({
+      query: ({ id, ...data }) => ({
+        url: `/users/${id}`,
+        method: 'PUT',
+        body: data,
+      }),
+      invalidatesTags: ['Users'],
+    }),
+
+    deleteUser: builder.mutation({
+      query: (id) => ({
+        url: `/users/${id}`,
+        method: 'DELETE',
+      }),
+      invalidatesTags: ['Users'],
+    }),
+
     // Audit (Superadmin only)
     getAuditLogs: builder.query({
       query: (params) => ({
         url: '/audit',
+        params,
+      }),
+      providesTags: ['Audit'],
+    }),
+
+    getAuditStats: builder.query({
+      query: (params) => ({
+        url: '/audit/stats/summary',
         params,
       }),
       providesTags: ['Audit'],
@@ -412,7 +437,10 @@ export const {
   useValidateStagingMutation,
   useGetUsersQuery,
   useCreateUserMutation,
+  useUpdateUserMutation,
+  useDeleteUserMutation,
   useGetAuditLogsQuery,
+  useGetAuditStatsQuery,
   useGetETLExecutionsQuery,
   useGetETLStatsQuery,
   useGetLastUpdateQuery,
