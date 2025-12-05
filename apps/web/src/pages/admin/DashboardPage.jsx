@@ -9,7 +9,7 @@ export default function DashboardPage() {
   
   return (
     <div>
-      <h1>Dashboard</h1>
+      <h1>Painel</h1>
       <Row gutter={16}>
         <Col span={6}>
           <Card>

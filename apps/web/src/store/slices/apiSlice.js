@@ -30,7 +30,7 @@ const baseQueryWithReauth = async (args, api, extraOptions) => {
 export const apiSlice = createApi({
   reducerPath: 'api',
   baseQuery: baseQueryWithReauth,
-  tagTypes: ['Unidades', 'Medicos', 'Especialidades', 'Staging', 'Users', 'Audit', 'ETL', 'Mapeamentos', 'Bairros'],
+  tagTypes: ['Unidades', 'Medicos', 'Especialidades', 'Staging', 'Users', 'Audit', 'ETL', 'Mapeamentos', 'Bairros', 'Icones'],
   endpoints: (builder) => ({
     // Auth
     login: builder.mutation({
@@ -236,10 +236,35 @@ export const apiSlice = createApi({
       invalidatesTags: ['Users'],
     }),
 
+    updateUser: builder.mutation({
+      query: ({ id, ...data }) => ({
+        url: `/users/${id}`,
+        method: 'PUT',
+        body: data,
+      }),
+      invalidatesTags: ['Users'],
+    }),
+
+    deleteUser: builder.mutation({
+      query: (id) => ({
+        url: `/users/${id}`,
+        method: 'DELETE',
+      }),
+      invalidatesTags: ['Users'],
+    }),
+
     // Audit (Superadmin only)
     getAuditLogs: builder.query({
       query: (params) => ({
         url: '/audit',
+        params,
+      }),
+      providesTags: ['Audit'],
+    }),
+
+    getAuditStats: builder.query({
+      query: (params) => ({
+        url: '/audit/stats/summary',
         params,
       }),
       providesTags: ['Audit'],
@@ -325,6 +350,64 @@ export const apiSlice = createApi({
         body: formData,
       }),
     }),
+
+    // Ícones
+    getIcones: builder.query({
+      query: (params = {}) => ({
+        url: '/icones',
+        params,
+      }),
+      providesTags: ['Icones'],
+    }),
+
+    getIconeById: builder.query({
+      query: (id) => `/icones/${id}`,
+      providesTags: ['Icones'],
+    }),
+
+    createIcone: builder.mutation({
+      query: (data) => ({
+        url: '/icones',
+        method: 'POST',
+        body: data,
+      }),
+      invalidatesTags: ['Icones', 'Unidades'],
+    }),
+
+    uploadIconeFile: builder.mutation({
+      query: (formData) => ({
+        url: '/icones/upload',
+        method: 'POST',
+        body: formData,
+      }),
+      invalidatesTags: ['Icones', 'Unidades'],
+    }),
+
+    updateIcone: builder.mutation({
+      query: ({ id, ...data }) => ({
+        url: `/icones/${id}`,
+        method: 'PUT',
+        body: data,
+      }),
+      invalidatesTags: ['Icones', 'Unidades'],
+    }),
+
+    deleteIcone: builder.mutation({
+      query: (id) => ({
+        url: `/icones/${id}`,
+        method: 'DELETE',
+      }),
+      invalidatesTags: ['Icones', 'Unidades'],
+    }),
+
+    reordenarIcones: builder.mutation({
+      query: (icones) => ({
+        url: '/icones/reordenar/batch',
+        method: 'PUT',
+        body: { icones },
+      }),
+      invalidatesTags: ['Icones'],
+    }),
   }),
 })
 
@@ -354,7 +437,10 @@ export const {
   useValidateStagingMutation,
   useGetUsersQuery,
   useCreateUserMutation,
+  useUpdateUserMutation,
+  useDeleteUserMutation,
   useGetAuditLogsQuery,
+  useGetAuditStatsQuery,
   useGetETLExecutionsQuery,
   useGetETLStatsQuery,
   useGetLastUpdateQuery,
@@ -367,4 +453,11 @@ export const {
   useUploadUnidadeImagemMutation,
   useDeleteUnidadeImagemMutation,
   useUploadIconeMutation,
+  useGetIconesQuery,
+  useGetIconeByIdQuery,
+  useCreateIconeMutation,
+  useUploadIconeFileMutation,
+  useUpdateIconeMutation,
+  useDeleteIconeMutation,
+  useReordenarIconesMutation,
 } = apiSlice

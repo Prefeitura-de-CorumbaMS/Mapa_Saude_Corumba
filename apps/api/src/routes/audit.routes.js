@@ -32,7 +32,11 @@ router.get('/', asyncHandler(async (req, res) => {
   
   if (tabela) where.tabela = tabela;
   if (operacao) where.operacao = operacao;
-  if (user_id) where.user_id = parseInt(user_id);
+  
+  // Suporte para filtrar por user_id=null (ações do sistema)
+  if (user_id !== undefined) {
+    where.user_id = user_id === 'null' ? null : parseInt(user_id);
+  }
   
   if (start_date || end_date) {
     where.timestamp = {};

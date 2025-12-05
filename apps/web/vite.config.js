@@ -11,6 +11,7 @@ export default defineConfig({
     },
   },
   server: {
+    host: '0.0.0.0', // Permite acesso de qualquer IP na rede
     port: 5173,
     proxy: {
       '/api': {

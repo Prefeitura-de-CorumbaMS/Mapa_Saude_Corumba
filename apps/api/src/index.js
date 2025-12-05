@@ -12,6 +12,7 @@ const unidadeRoutes = require('./routes/unidade.routes');
 const medicoRoutes = require('./routes/medico.routes');
 const especialidadeRoutes = require('./routes/especialidade.routes');
 const bairroRoutes = require('./routes/bairro.routes');
+const iconeRoutes = require('./routes/icone.routes');
 const auditRoutes = require('./routes/audit.routes');
 const etlRoutes = require('./routes/etl.routes');
 const uploadRoutes = require('./routes/upload.routes');
@@ -54,7 +55,11 @@ app.use(cors({
     // Permitir requests sem origin (como curl, postman, etc)
     if (!origin) return callback(null, true);
 
-    if (allowedOrigins.includes(origin)) {
+    // Permitir qualquer origem localhost ou IP local (192.168.x.x, 10.x.x.x, 172.16-31.x.x)
+    const isLocalhost = origin.includes('localhost') || origin.includes('127.0.0.1');
+    const isLocalIP = /^https?:\/\/(192\.168\.|10\.|172\.(1[6-9]|2[0-9]|3[01])\.)\d{1,3}\.\d{1,3}:\d{4,5}$/.test(origin);
+    
+    if (allowedOrigins.includes(origin) || isLocalhost || isLocalIP) {
       callback(null, true);
     } else {
       callback(new Error('Not allowed by CORS'));
@@ -90,6 +95,7 @@ app.use('/api/unidades', unidadeRoutes);
 app.use('/api/medicos', medicoRoutes);
 app.use('/api/especialidades', especialidadeRoutes);
 app.use('/api/bairros', bairroRoutes);
+app.use('/api/icones', iconeRoutes);
 app.use('/api/audit', auditRoutes);
 app.use('/api/etl', etlRoutes);
 app.use('/api/upload', uploadRoutes);

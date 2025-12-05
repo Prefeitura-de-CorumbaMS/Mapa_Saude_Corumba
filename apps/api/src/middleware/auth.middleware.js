@@ -1,5 +1,6 @@
 const jwt = require('jsonwebtoken');
 const { logger } = require('@sigls/logger');
+const { prisma } = require('@sigls/database');
 
 // ============================================================================
 // AUTHENTICATION MIDDLEWARE
@@ -8,7 +9,7 @@ const { logger } = require('@sigls/logger');
 /**
  * Verifica se o usuário está autenticado via JWT
  */
-function authenticate(req, res, next) {
+async function authenticate(req, res, next) {
   try {
     const authHeader = req.headers.authorization;
     
@@ -29,6 +30,16 @@ function authenticate(req, res, next) {
       username: decoded.username,
       role: decoded.role,
     };
+    
+    // Setar variável de sessão MySQL para os triggers usarem
+    try {
+      await prisma.$executeRawUnsafe(`SET @current_user_id = ${decoded.userId}`);
+    } catch (error) {
+      logger.error('Failed to set MySQL session variable', {
+        error: error.message,
+        user_id: decoded.userId,
+      });
+    }
     
     next();
   } catch (error) {

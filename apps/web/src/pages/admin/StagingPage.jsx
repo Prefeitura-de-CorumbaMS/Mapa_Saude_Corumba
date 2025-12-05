@@ -505,7 +505,7 @@ export default function StagingPage() {
                 <div style={{ position: 'relative', display: 'inline-block' }}>
                   <Image
                     src={imageUrl}
-                    alt="Preview"
+                    alt="Pré-visualização"
                     style={{ maxWidth: '300px', maxHeight: '200px' }}
                   />
                   <Button

@@ -10,6 +10,7 @@ import UnidadesPage from './pages/admin/UnidadesPage'
 import MedicosPage from './pages/admin/MedicosPage'
 import EspecialidadesPage from './pages/admin/EspecialidadesPage'
 import EspecialidadesNormalizacaoPage from './pages/admin/EspecialidadesNormalizacaoPage'
+import IconesPage from './pages/admin/IconesPage'
 import BairrosPage from './pages/admin/BairrosPage'
 import UsersPage from './pages/admin/UsersPage'
 import AuditPage from './pages/admin/AuditPage'
@@ -36,6 +37,7 @@ function App() {
           <Route path="medicos" element={<MedicosPage />} />
           <Route path="especialidades" element={<EspecialidadesPage />} />
           <Route path="especialidades-normalizacao" element={<EspecialidadesNormalizacaoPage />} />
+          <Route path="icones" element={<IconesPage />} />
           <Route path="bairros" element={<BairrosPage />} />
           <Route path="users" element={<SuperadminRoute><UsersPage /></SuperadminRoute>} />
           <Route path="audit" element={<SuperadminRoute><AuditPage /></SuperadminRoute>} />
