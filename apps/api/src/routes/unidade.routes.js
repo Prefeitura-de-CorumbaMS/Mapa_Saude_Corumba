@@ -45,7 +45,10 @@ router.get('/', asyncHandler(async (req, res) => {
   // Transformar dados para incluir especialidades e redes sociais diretamente
   const unidadesFormatted = unidades.map(u => ({
     ...u,
-    especialidades: u.especialidades.map(e => e.especialidade),
+    // Filtrar apenas especialidades ativas E visíveis para o usuário
+    especialidades: u.especialidades
+      .map(e => e.especialidade)
+      .filter(e => e.ativo && e.visivel_para_usuario),
     redes_sociais: u.redes_sociais,
   }));
 
@@ -91,7 +94,10 @@ router.get('/:id', asyncHandler(async (req, res) => {
     success: true,
     data: {
       ...unidade,
-      especialidades: unidade.especialidades.map(e => e.especialidade),
+      // Filtrar apenas especialidades ativas E visíveis para o usuário
+      especialidades: unidade.especialidades
+        .map(e => e.especialidade)
+        .filter(e => e.ativo && e.visivel_para_usuario),
       redes_sociais: unidade.redes_sociais,
     },
   });
@@ -151,16 +157,21 @@ router.post('/', authenticate, requireAdmin, asyncHandler(async (req, res) => {
       where: { id: { in: medicos } },
       include: {
         especialidades: {
-          select: { id_especialidade: true },
+          include: {
+            especialidade: true, // Incluir dados completos da especialidade para filtrar
+          },
         },
       },
     });
 
-    // Obter IDs únicos de especialidades dos médicos
+    // Obter IDs únicos de especialidades dos médicos (apenas visíveis para usuário)
     const especialidadesUnicas = new Set();
     medicosComEspecialidades.forEach(medico => {
       medico.especialidades.forEach(esp => {
-        especialidadesUnicas.add(esp.id_especialidade);
+        // Filtrar apenas especialidades ativas E visíveis para o usuário
+        if (esp.especialidade.ativo && esp.especialidade.visivel_para_usuario) {
+          especialidadesUnicas.add(esp.id_especialidade);
+        }
       });
     });
 
@@ -260,16 +271,21 @@ router.put('/:id', authenticate, requireAdmin, asyncHandler(async (req, res) => 
         where: { id: { in: medicos } },
         include: {
           especialidades: {
-            select: { id_especialidade: true },
+            include: {
+              especialidade: true, // Incluir dados completos da especialidade para filtrar
+            },
           },
         },
       });
 
-      // Obter IDs únicos de especialidades dos médicos
+      // Obter IDs únicos de especialidades dos médicos (apenas visíveis para usuário)
       const especialidadesUnicas = new Set();
       medicosComEspecialidades.forEach(medico => {
         medico.especialidades.forEach(esp => {
-          especialidadesUnicas.add(esp.id_especialidade);
+          // Filtrar apenas especialidades ativas E visíveis para o usuário
+          if (esp.especialidade.ativo && esp.especialidade.visivel_para_usuario) {
+            especialidadesUnicas.add(esp.id_especialidade);
+          }
         });
       });
 
@@ -377,7 +393,10 @@ router.get('/:id/medicos', asyncHandler(async (req, res) => {
     .filter(m => m.ativo)
     .map(m => ({
       ...m,
-      especialidades: m.especialidades.map(e => e.especialidade),
+      // Filtrar apenas especialidades ativas E visíveis para o usuário
+      especialidades: m.especialidades
+        .map(e => e.especialidade)
+        .filter(e => e.ativo && e.visivel_para_usuario),
     }));
 
   // Ordenar por nome
