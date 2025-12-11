@@ -112,7 +112,7 @@ export default function AdminLayout() {
           placement="left"
           onClose={() => setMobileMenuOpen(false)}
           open={mobileMenuOpen}
-          bodyStyle={{ padding: 0 }}
+          styles={{ body: { padding: 0 } }}
           headerStyle={{ 
             background: '#001529',
             color: 'white'

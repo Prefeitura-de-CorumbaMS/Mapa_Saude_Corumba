@@ -3,6 +3,7 @@ require('dotenv').config({ path: path.join(__dirname, '../../../.env') });
 const express = require('express');
 const cors = require('cors');
 const helmet = require('helmet');
+const rateLimit = require('express-rate-limit');
 const { requestLogger, errorLogger, logger } = require('@sigls/logger');
 
 const authRoutes = require('./routes/auth.routes');
@@ -29,6 +30,24 @@ const PORT = process.env.API_PORT || 3001;
 // ============================================================================
 // MIDDLEWARE
 // ============================================================================
+
+// Rate Limiting
+const apiLimiter = rateLimit({
+  windowMs: 15 * 60 * 1000, // 15 minutos
+  max: 100, // 100 requisições por IP
+  message: { success: false, error: 'Muitas requisições. Tente novamente mais tarde.' },
+  standardHeaders: true,
+  legacyHeaders: false,
+});
+
+const loginLimiter = rateLimit({
+  windowMs: 15 * 60 * 1000, // 15 minutos
+  max: 5, // 5 tentativas de login
+  skipSuccessfulRequests: true,
+  message: { success: false, error: 'Muitas tentativas de login. Tente novamente em 15 minutos.' },
+  standardHeaders: true,
+  legacyHeaders: false,
+});
 
 // Security
 app.use(helmet({
@@ -88,6 +107,8 @@ app.get('/health', (req, res) => {
 });
 
 // API routes
+app.use('/api/', apiLimiter);
+app.use('/api/auth/login', loginLimiter);
 app.use('/api/auth', authRoutes);
 app.use('/api/users', userRoutes);
 app.use('/api/staging', stagingRoutes);

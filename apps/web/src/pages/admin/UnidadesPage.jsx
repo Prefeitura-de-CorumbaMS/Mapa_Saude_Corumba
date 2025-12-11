@@ -65,7 +65,7 @@ export default function UnidadesPage() {
 
   // API hooks
   const { data, isLoading } = useGetUnidadesQuery({ page, limit: 20 })
-  const { data: medicosData } = useGetMedicosQuery({ ativo: 'true', limit: 1000 })
+  const { data: medicosData } = useGetMedicosQuery({ ativo: 'true', limit: 10000 })
   const { data: bairrosData } = useGetBairrosQuery({ ativo: true })
   const { data: iconesData } = useGetIconesQuery({ ativo: 'true' })
   const [createUnidade, { isLoading: creating }] = useCreateUnidadeMutation()
@@ -394,15 +394,15 @@ export default function UnidadesPage() {
       title: 'Nome',
       dataIndex: 'nome',
       key: 'nome',
-      width: '25%',
+      width: 250,
       render: (text) => <Text strong>{text}</Text>
     },
-    { title: 'Endereço', dataIndex: 'endereco', key: 'endereco', width: '25%' },
+    { title: 'Endereço', dataIndex: 'endereco', key: 'endereco', width: 250 },
     {
       title: 'Especialidades',
       dataIndex: 'especialidades',
       key: 'especialidades',
-      width: '20%',
+      width: 200,
       render: (especialidades) => (
         <div style={{ display: 'flex', flexWrap: 'wrap', gap: '4px' }}>
           {especialidades && especialidades.length > 0 ? (
@@ -478,6 +478,7 @@ export default function UnidadesPage() {
         dataSource={data?.data || []}
         loading={isLoading}
         rowKey="id"
+        scroll={{ x: 1000 }}
         pagination={{
           current: page,
           pageSize: 20,

@@ -28,7 +28,7 @@ const useIsMobile = () => {
   return isMobile
 }
 
-export default function MapLegend({ iconesData, onIconClick, selectedIconUrl }) {
+export default function MapLegend({ iconesData, onIconClick, selectedIconUrl, unidades }) {
   const isMobile = useIsMobile()
   const [isExpanded, setIsExpanded] = useState(false)
 
@@ -42,13 +42,23 @@ export default function MapLegend({ iconesData, onIconClick, selectedIconUrl }) 
     }
   }
 
-  // Mostrar todos os ícones ativos ordenados
+  // Mostrar apenas os ícones que estão sendo usados pelas unidades
   const iconesEmUso = useMemo(() => {
     if (!iconesData?.data || !Array.isArray(iconesData.data)) return []
+    if (!unidades || !Array.isArray(unidades)) return []
 
-    // Retornar todos os ícones ordenados por ordem
-    return [...iconesData.data].sort((a, b) => (a.ordem || 0) - (b.ordem || 0))
-  }, [iconesData])
+    // Coletar URLs de ícones únicos das unidades
+    const iconesUsados = new Set(
+      unidades
+        .map(u => u.icone_url)
+        .filter(url => url && url.trim() !== '')
+    )
+
+    // Filtrar apenas os ícones que estão sendo usados e ordenar por ordem
+    return iconesData.data
+      .filter(icone => iconesUsados.has(icone.url))
+      .sort((a, b) => (a.ordem || 0) - (b.ordem || 0))
+  }, [iconesData, unidades])
 
   // Se não houver ícones, não renderizar a legenda
   if (!iconesEmUso || iconesEmUso.length === 0) return null
@@ -160,10 +170,12 @@ export default function MapLegend({ iconesData, onIconClick, selectedIconUrl }) 
         maxHeight: 'calc(100vh - 100px)',
         boxShadow: '0 2px 8px rgba(0,0,0,0.15)',
       }}
-      bodyStyle={{
-        padding: '12px',
-        maxHeight: 'calc(100vh - 180px)',
-        overflowY: 'auto',
+      styles={{
+        body: {
+          padding: '12px',
+          maxHeight: 'calc(100vh - 180px)',
+          overflowY: 'auto',
+        }
       }}
     >
       <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>

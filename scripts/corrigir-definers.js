@@ -38,8 +38,11 @@ async function corrigirDefiners() {
 
     console.log(`📋 ${triggers.length} trigger(s) encontrado(s):\n`);
 
+    // Lista de definers conhecidamente problemáticos
+    const definersProblematicos = ['elizaelramos@localhost', 'sigls_user@localhost'];
+    
     const triggersComProblema = triggers.filter(t => 
-      t.DEFINER && t.DEFINER.includes('elizaelramos@localhost')
+      t.DEFINER && definersProblematicos.some(definer => t.DEFINER.includes(definer))
     );
 
     if (triggersComProblema.length === 0) {
@@ -96,8 +99,11 @@ async function corrigirDefiners() {
     } else {
       console.log(`📋 ${views.length} view(s) encontrada(s):\n`);
 
+      // Lista de definers conhecidamente problemáticos
+      const definersProblematicos = ['elizaelramos@localhost', 'sigls_user@localhost'];
+      
       const viewsComProblema = views.filter(v => 
-        v.DEFINER && v.DEFINER.includes('elizaelramos@localhost')
+        v.DEFINER && definersProblematicos.some(definer => v.DEFINER.includes(definer))
       );
 
       if (viewsComProblema.length === 0) {
@@ -152,8 +158,11 @@ async function corrigirDefiners() {
     } else {
       console.log(`📋 ${procedures.length} stored procedure(s) encontrado(s):\n`);
 
+      // Lista de definers conhecidamente problemáticos
+      const definersProblematicos = ['elizaelramos@localhost', 'sigls_user@localhost'];
+      
       const procsComProblema = procedures.filter(p => 
-        p.DEFINER && p.DEFINER.includes('elizaelramos@localhost')
+        p.DEFINER && definersProblematicos.some(definer => p.DEFINER.includes(definer))
       );
 
       if (procsComProblema.length > 0) {

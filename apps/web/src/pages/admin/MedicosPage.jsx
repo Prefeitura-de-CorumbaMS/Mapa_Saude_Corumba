@@ -24,8 +24,8 @@ export default function MedicosPage() {
   const [editingMedico, setEditingMedico] = useState(null)
   const [form] = Form.useForm()
 
-  // API hooks
-  const { data: medicosData, isLoading: loadingMedicos } = useGetMedicosQuery({ page, limit: 100 })
+  // API hooks - carrega TODOS os médicos (limite 10000 para garantir)
+  const { data: medicosData, isLoading: loadingMedicos } = useGetMedicosQuery({ page: 1, limit: 10000 })
   const { data: especialidadesData } = useGetEspecialidadesQuery()
   const [createMedico, { isLoading: creating }] = useCreateMedicoMutation()
   const [updateMedico, { isLoading: updating }] = useUpdateMedicoMutation()

@@ -18,7 +18,7 @@ import {
   CloseCircleOutlined,
 } from '@ant-design/icons'
 import L from 'leaflet'
-import { useGetUnidadesQuery, useGetUnidadeMedicosQuery, useGetBairrosQuery, useGetEspecialidadesQuery, useGetLastUpdateQuery, useGetIconesQuery } from '../store/slices/apiSlice'
+import { useGetUnidadesQuery, useGetUnidadeMedicosQuery, useGetLastUpdateQuery, useGetIconesQuery } from '../store/slices/apiSlice'
 import MapLegend from '../components/MapLegend'
 import 'leaflet/dist/leaflet.css'
 
@@ -29,28 +29,35 @@ const CustomMarker = ({ unidade, onClick, customIcon, isSelected }) => {
   const [isHovered, setIsHovered] = useState(false)
 
   const handleClick = () => {
-    // Zoom to the marker position
-    map.setView([unidade.latitude, unidade.longitude], 18) // Zoom level 18 for close zoom
+    // Zoom moderado que mantém ícones visíveis
+    const targetZoom = 16
+    
+    // Aplica zoom com animação suave, centralizando no marcador
+    map.flyTo([unidade.latitude, unidade.longitude], targetZoom, {
+      duration: 0.8,
+      easeLinearity: 0.25
+    })
+    
     onClick(unidade)
   }
 
-  // Tamanhos dos ícones: normal, hover e selecionado
+  // Tamanhos dos ícones: normal, hover e selecionado (aumentados para melhor visibilidade)
   const getIconSize = () => {
-    if (isSelected) return [48, 72]
-    if (isHovered) return [35, 53] // 40% maior no hover
-    return [25, 41]
+    if (isSelected) return [55, 82] // Ícone selecionado bem maior
+    if (isHovered) return [45, 67] // Ícone no hover maior
+    return [35, 57] // Ícone normal maior que antes (era 25x41)
   }
 
   const getIconAnchor = () => {
-    if (isSelected) return [24, 72]
-    if (isHovered) return [17.5, 53]
-    return [12, 41]
+    if (isSelected) return [27.5, 82]
+    if (isHovered) return [22.5, 67]
+    return [17.5, 57]
   }
 
   const getShadowSize = () => {
-    if (isSelected) return [80, 80]
-    if (isHovered) return [55, 55]
-    return [41, 41]
+    if (isSelected) return [90, 90]
+    if (isHovered) return [65, 65]
+    return [50, 50]
   }
 
   // Criar ícone com tamanho dinâmico
@@ -269,25 +276,47 @@ export default function MapPage() {
   }, []) // Executa apenas uma vez ao montar
 
   const { data, isLoading, isError, error } = useGetUnidadesQuery(undefined, {
-    refetchOnMountOrArgChange: 30, // Refetch se dados tiverem mais de 30 segundos
+    refetchOnMountOrArgChange: 300, // Refetch apenas se dados tiverem mais de 5 minutos
+    refetchOnFocus: false, // Não refetch ao voltar para a aba
   })
   const { data: medicosData, isLoading: medicosLoading } = useGetUnidadeMedicosQuery(
     selectedUnidade?.id,
-    { skip: !selectedUnidade }
+    { 
+      skip: !selectedUnidade,
+      refetchOnMountOrArgChange: false, // Usa cache sempre que possível
+    }
   )
-  const { data: bairrosData } = useGetBairrosQuery()
-  const { data: especialidadesData } = useGetEspecialidadesQuery()
-  const { data: lastUpdateData } = useGetLastUpdateQuery()
+  const { data: lastUpdateData } = useGetLastUpdateQuery(undefined, {
+    refetchOnMountOrArgChange: 300, // Refetch apenas após 5 minutos
+  })
   const { data: iconesData } = useGetIconesQuery({ ativo: 'true' }, {
-    refetchOnMountOrArgChange: 30, // Refetch ícones também
+    refetchOnMountOrArgChange: 300, // Refetch ícones após 5 minutos
+    refetchOnFocus: false, // Não refetch ao voltar para a aba
   })
 
   // Extrair dados antes dos early returns
   const unidades = data?.data || []
   const medicos = medicosData?.data || []
-  const bairros = bairrosData?.data?.map(b => b.nome).sort() || []
-  const especialidades = especialidadesData?.data || []
   const lastUpdate = lastUpdateData?.data?.lastUpdate || null
+  
+  // Extrair bairros únicos das unidades (não precisa query separada)
+  const bairros = useMemo(() => {
+    const bairrosSet = new Set(unidades.map(u => u.bairro).filter(Boolean))
+    return Array.from(bairrosSet).sort()
+  }, [unidades])
+  
+  // Extrair especialidades únicas das unidades (não precisa query separada)
+  const especialidades = useMemo(() => {
+    const espMap = new Map()
+    unidades.forEach(u => {
+      u.especialidades?.forEach(esp => {
+        if (!espMap.has(esp.id)) {
+          espMap.set(esp.id, esp)
+        }
+      })
+    })
+    return Array.from(espMap.values())
+  }, [unidades])
 
   // Formatar data da última atualização
   const formatarDataAtualizacao = () => {
@@ -388,8 +417,6 @@ export default function MapPage() {
     setSearchText('')
   }
 
-  console.log('GetUnidades Query Result:', { data, isLoading, isError, error });
-
   if (isLoading) {
     return (
       <div style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', height: '100%' }}>
@@ -426,11 +453,6 @@ export default function MapPage() {
         />
       </div>
     )
-  }
-
-  console.log('Unidades para renderizar no mapa:', unidades);
-  if (unidades.length === 0) {
-    console.warn('Nenhuma unidade encontrada para exibir no mapa.');
   }
 
   const handleMarkerClick = (unidade) => {
@@ -1107,7 +1129,13 @@ export default function MapPage() {
         )}
 
         {/* Mapa */}
-        <div style={{ flex: 1, height: '100%', position: 'relative' }}>
+        <div style={{ 
+          flex: 1, 
+          height: '100%', 
+          minHeight: '500px', // Altura mínima para evitar CLS
+          position: 'relative',
+          backgroundColor: '#e5e3df' // Cor de fundo similar aos tiles para reduzir flash
+        }}>
           <MapContainer
             center={CORUMBA_CONFIG.center}
             zoom={CORUMBA_CONFIG.zoom}
@@ -1115,6 +1143,10 @@ export default function MapPage() {
             maxBoundsViscosity={1.0}
             zoomControl={false}
             style={{ height: '100%', width: '100%' }}
+            whenReady={(map) => {
+              // Força um resize após o mapa estar pronto para evitar shifts
+              setTimeout(() => map.target.invalidateSize(), 100)
+            }}
           >
             <ZoomControl position="topright" />
             <MapViewController 
@@ -1129,6 +1161,11 @@ export default function MapPage() {
             <TileLayer
               attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a>'
               url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
+              maxZoom={19}
+              minZoom={11}
+              keepBuffer={4}
+              updateWhenIdle={false}
+              updateWhenZooming={false}
             />
 
             {!isZooming && filteredUnidades.map((unidade) => {
@@ -1170,6 +1207,7 @@ export default function MapPage() {
           <MapLegend 
             iconesData={iconesData}
             selectedIconUrl={selectedIconUrl}
+            unidades={filteredUnidades}
             onIconClick={(iconUrl) => {
               // Toggle: se clicar no mesmo ícone, desseleciona
               setSelectedIconUrl(selectedIconUrl === iconUrl ? null : iconUrl)
