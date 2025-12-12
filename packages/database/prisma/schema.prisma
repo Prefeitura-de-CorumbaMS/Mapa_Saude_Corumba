@@ -66,6 +66,7 @@ model PROD_Unidade_Saude {
   horario_atendimento String?                          @db.Text
   imagem_url          String?                          @db.VarChar(500)
   icone_url           String?                          @db.VarChar(500)
+  sala_vacina         Boolean                          @default(false)
   id_origem           String                           @unique @db.VarChar(100)
   ativo               Boolean                          @default(true)
   created_at          DateTime                         @default(now())
@@ -78,6 +79,7 @@ model PROD_Unidade_Saude {
 
   @@index([ativo])
   @@index([latitude, longitude])
+  @@index([sala_vacina])
   @@map("prod_unidade_saude")
 }
 

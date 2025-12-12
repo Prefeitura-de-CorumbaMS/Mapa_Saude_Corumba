@@ -356,24 +356,27 @@ export default function MapPage() {
     // Se tem busca por texto, usar ela (prioritária)
     if (searchText.trim()) {
       const textLower = searchText.toLowerCase().trim()
-      
+
       filtered = filtered.filter(unidade => {
         // Buscar no nome da unidade
         const nomeMatch = unidade.nome?.toLowerCase().includes(textLower)
-        
+
         // Buscar no bairro
         const bairroMatch = unidade.bairro?.toLowerCase().includes(textLower)
-        
+
         // Buscar nas especialidades
         const especialidadeMatch = unidade.especialidades?.some(
           esp => esp.nome?.toLowerCase().includes(textLower)
         )
-        
-        return nomeMatch || bairroMatch || especialidadeMatch
+
+        // Buscar por "sala de vacina"
+        const salaVacinaMatch = (textLower.includes('vacina') || textLower.includes('sala')) && unidade.sala_vacina
+
+        return nomeMatch || bairroMatch || especialidadeMatch || salaVacinaMatch
       })
       return filtered
     }
-    
+
     // Se não tem busca por texto, usar busca por select (comportamento antigo)
     if (!searchType || !searchValue) {
       return filtered
@@ -386,6 +389,8 @@ export default function MapPage() {
         return unidade.id === searchValue
       } else if (searchType === 'especialidade') {
         return unidade.especialidades?.some(esp => esp.id === searchValue)
+      } else if (searchType === 'sala_vacina') {
+        return unidade.sala_vacina === true
       }
       return true
     })
@@ -399,6 +404,7 @@ export default function MapPage() {
     let byName = 0
     let byBairro = 0
     let byEspecialidade = 0
+    let bySalaVacina = 0
 
     filteredUnidades.forEach(unidade => {
       if (unidade.nome?.toLowerCase().includes(textLower)) byName++
@@ -406,9 +412,12 @@ export default function MapPage() {
       if (unidade.especialidades?.some(esp => esp.nome?.toLowerCase().includes(textLower))) {
         byEspecialidade++
       }
+      if ((textLower.includes('vacina') || textLower.includes('sala')) && unidade.sala_vacina) {
+        bySalaVacina++
+      }
     })
 
-    return { byName, byBairro, byEspecialidade }
+    return { byName, byBairro, byEspecialidade, bySalaVacina }
   }, [searchText, filteredUnidades])
 
   // Handler para reset da busca
@@ -686,6 +695,39 @@ export default function MapPage() {
 
                   <Divider />
 
+                  {/* Sala de Vacina */}
+                  {selectedUnidade.sala_vacina && (
+                    <div style={{ marginBottom: '24px' }}>
+                      <div style={{
+                        padding: '16px',
+                        backgroundColor: '#f0f7ff',
+                        borderRadius: '8px',
+                        border: '2px solid #1890ff',
+                        display: 'flex',
+                        alignItems: 'center',
+                        gap: '12px',
+                      }}>
+                        <MedicineBoxOutlined style={{ fontSize: '24px', color: '#1890ff' }} />
+                        <div>
+                          <div style={{
+                            fontSize: '16px',
+                            fontWeight: 'bold',
+                            color: '#1890ff',
+                            marginBottom: '4px',
+                          }}>
+                            Sala de Vacina Disponível
+                          </div>
+                          <div style={{
+                            fontSize: '13px',
+                            color: '#666',
+                          }}>
+                            Esta unidade possui sala de vacina
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+                  )}
+
                   {/* Especialidades */}
                   <div style={{ marginBottom: '24px' }}>
                     <h3 style={{
@@ -898,7 +940,12 @@ export default function MapPage() {
                             value={searchType}
                             onChange={(value) => {
                               setSearchType(value)
-                              setSearchValue(null)
+                              // Se selecionar "sala_vacina", já aplica o filtro automaticamente
+                              if (value === 'sala_vacina') {
+                                setSearchValue(true)
+                              } else {
+                                setSearchValue(null)
+                              }
                             }}
                             allowClear
                             onClear={handleResetSearch}
@@ -907,6 +954,7 @@ export default function MapPage() {
                             <Select.Option value="bairro">Buscar por Bairro</Select.Option>
                             <Select.Option value="unidade">Buscar por Unidade</Select.Option>
                             <Select.Option value="especialidade">Buscar por Especialidade</Select.Option>
+                            <Select.Option value="sala_vacina">Buscar por Sala de Vacina</Select.Option>
                           </Select>
                         </>
                       )}
@@ -1031,20 +1079,26 @@ export default function MapPage() {
                             <div style={{ display: 'flex', flexDirection: 'column', gap: '2px' }}>
                               {searchStats.byName > 0 && (
                                 <div>
-                                  • <Tag color="blue" style={{ fontSize: '11px' }}>{searchStats.byName}</Tag> 
+                                  • <Tag color="blue" style={{ fontSize: '11px' }}>{searchStats.byName}</Tag>
                                   no nome da unidade
                                 </div>
                               )}
                               {searchStats.byBairro > 0 && (
                                 <div>
-                                  • <Tag color="green" style={{ fontSize: '11px' }}>{searchStats.byBairro}</Tag> 
+                                  • <Tag color="green" style={{ fontSize: '11px' }}>{searchStats.byBairro}</Tag>
                                   no bairro
                                 </div>
                               )}
                               {searchStats.byEspecialidade > 0 && (
                                 <div>
-                                  • <Tag color="purple" style={{ fontSize: '11px' }}>{searchStats.byEspecialidade}</Tag> 
+                                  • <Tag color="purple" style={{ fontSize: '11px' }}>{searchStats.byEspecialidade}</Tag>
                                   na especialidade
+                                </div>
+                              )}
+                              {searchStats.bySalaVacina > 0 && (
+                                <div>
+                                  • <Tag color="orange" style={{ fontSize: '11px' }}>{searchStats.bySalaVacina}</Tag>
+                                  com sala de vacina
                                 </div>
                               )}
                             </div>

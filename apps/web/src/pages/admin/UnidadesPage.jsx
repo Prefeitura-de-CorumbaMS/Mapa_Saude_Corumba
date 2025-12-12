@@ -46,8 +46,7 @@ const REDES_SOCIAIS_OPTIONS = [
 const getFullImageUrl = (url) => {
   if (!url) return ''
   if (url.startsWith('http')) return url
-  const apiBaseUrl = import.meta.env.VITE_API_URL?.replace('/api', '') || 'http://localhost:3001'
-  return `${apiBaseUrl}${url}`
+  return url
 }
 
 export default function UnidadesPage() {
@@ -141,6 +140,7 @@ export default function UnidadesPage() {
       whatsapp: unidade.whatsapp,
       enfermeiro_responsavel: unidade.enfermeiro_responsavel,
       horario_atendimento: unidade.horario_atendimento,
+      sala_vacina: unidade.sala_vacina || false,
       ativo: unidade.ativo,
     })
 
@@ -183,6 +183,7 @@ export default function UnidadesPage() {
         whatsapp: values.whatsapp || null,
         enfermeiro_responsavel: values.enfermeiro_responsavel || null,
         horario_atendimento: values.horario_atendimento || null,
+        sala_vacina: values.sala_vacina || false,
         ativo: values.ativo ?? true,
         medicos: selectedMedicos,
         imagem_url: imageUrl || null,
@@ -541,6 +542,14 @@ export default function UnidadesPage() {
             valuePropName="checked"
           >
             <Switch checkedChildren="Ativo" unCheckedChildren="Inativo" />
+          </Form.Item>
+
+          <Form.Item
+            label="Sala de Vacina"
+            name="sala_vacina"
+            valuePropName="checked"
+          >
+            <Switch checkedChildren="Sim" unCheckedChildren="Não" />
           </Form.Item>
 
           {/* Hidden fields for latitude/longitude */}
