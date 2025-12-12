@@ -16,6 +16,7 @@ import {
   InstagramOutlined,
   LinkOutlined,
   CloseCircleOutlined,
+  CompassOutlined,
 } from '@ant-design/icons'
 import L from 'leaflet'
 import { useGetUnidadesQuery, useGetUnidadeMedicosQuery, useGetLastUpdateQuery, useGetIconesQuery } from '../store/slices/apiSlice'
@@ -460,7 +461,7 @@ export default function MapPage() {
     setSidebarCollapsed(false)
   }
 
-  const apiBaseUrl = import.meta.env.VITE_API_URL?.replace('/api', '') || 'http://localhost:3001'
+  const apiBaseUrl = ''
 
   // Sidebar responsivo
   const sidebarWidth = isMobile ? window.innerWidth * 0.85 : 400 // 85% da tela no mobile
@@ -622,7 +623,7 @@ export default function MapPage() {
                     <div style={{
                       display: 'flex',
                       alignItems: 'center',
-                      marginBottom: '24px',
+                      marginBottom: '12px',
                       gap: '12px',
                     }}>
                       <div style={{
@@ -648,6 +649,37 @@ export default function MapPage() {
                         }}
                       >
                         Abrir WhatsApp
+                      </Button>
+                    </div>
+                  )}
+
+                  {/* Como Chegar */}
+                  {selectedUnidade.latitude && selectedUnidade.longitude && (
+                    <div style={{
+                      display: 'flex',
+                      alignItems: 'center',
+                      marginBottom: '24px',
+                      gap: '12px',
+                    }}>
+                      <div style={{
+                        display: 'flex',
+                        alignItems: 'flex-start',
+                        color: '#666',
+                        flex: 1,
+                      }}>
+                        <CompassOutlined style={{ marginRight: '8px', marginTop: '4px', fontSize: '16px', color: '#1890ff' }} />
+                        <span style={{ flex: 1 }}>Ver rota no mapa</span>
+                      </div>
+                      <Button
+                        type="primary"
+                        icon={<CompassOutlined />}
+                        size="small"
+                        onClick={() => {
+                          const destination = `${selectedUnidade.latitude},${selectedUnidade.longitude}`
+                          window.open(`https://www.google.com/maps/dir/?api=1&destination=${destination}`, '_blank')
+                        }}
+                      >
+                        Como Chegar
                       </Button>
                     </div>
                   )}

@@ -54,7 +54,7 @@ app.use(helmet({
   contentSecurityPolicy: {
     directives: {
       ...helmet.contentSecurityPolicy.getDefaultDirectives(),
-      "img-src": ["'self'", "data:", "http://localhost:3001", "http://localhost:5173"],
+      "img-src": ["'self'", "data:", "http://localhost:3001", "http://localhost:3002", "http://localhost:5173", "http://localhost:5174", "http://localhost:5175", "http://localhost:5176"],
     },
   },
   crossOriginResourcePolicy: { policy: "cross-origin" },
@@ -66,6 +66,7 @@ const allowedOrigins = [
   'http://localhost:5174',
   'http://localhost:5175',
   'http://localhost:5176',
+  'https://mapasaude.projetoestrategico.app',
   process.env.FRONTEND_URL,
 ].filter(Boolean);
 
