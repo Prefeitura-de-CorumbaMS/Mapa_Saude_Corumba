@@ -67,6 +67,7 @@ model PROD_Unidade_Saude {
   imagem_url          String?                          @db.VarChar(500)
   icone_url           String?                          @db.VarChar(500)
   sala_vacina         Boolean                          @default(false)
+  sala_vacina_info    String?                          @db.Text
   id_origem           String                           @unique @db.VarChar(100)
   ativo               Boolean                          @default(true)
   created_at          DateTime                         @default(now())

@@ -708,20 +708,15 @@ export default function MapPage() {
                         gap: '12px',
                       }}>
                         <MedicineBoxOutlined style={{ fontSize: '24px', color: '#1890ff' }} />
-                        <div>
+                        <div style={{ flex: 1 }}>
                           <div style={{
                             fontSize: '16px',
                             fontWeight: 'bold',
                             color: '#1890ff',
                             marginBottom: '4px',
+                            whiteSpace: 'pre-line',
                           }}>
-                            Sala de Vacina Disponível
-                          </div>
-                          <div style={{
-                            fontSize: '13px',
-                            color: '#666',
-                          }}>
-                            Esta unidade possui sala de vacina
+                            {selectedUnidade.sala_vacina_info || 'Sala de Vacina Disponível'}
                           </div>
                         </div>
                       </div>
