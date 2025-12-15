@@ -5,9 +5,12 @@ import { PictureOutlined, DownOutlined, UpOutlined } from '@ant-design/icons'
 // Helper para obter URL completa da imagem
 const getFullImageUrl = (url) => {
   if (!url) return ''
+  // Se já é URL completa, retorna como está
   if (url.startsWith('http')) return url
-  const apiBaseUrl = import.meta.env.VITE_API_URL?.replace('/api', '') || 'http://localhost:3001'
-  return `${apiBaseUrl}${url}`
+  // Se começa com /, é URL relativa - retorna como está
+  if (url.startsWith('/')) return url
+  // Caso contrário, adiciona / no início
+  return `/${url}`
 }
 
 // Hook para detectar se é mobile
