@@ -16,11 +16,13 @@ import {
   InstagramOutlined,
   LinkOutlined,
   CloseCircleOutlined,
+  CompassOutlined,
 } from '@ant-design/icons'
 import L from 'leaflet'
-import { useGetUnidadesQuery, useGetUnidadeMedicosQuery, useGetBairrosQuery, useGetEspecialidadesQuery, useGetLastUpdateQuery, useGetIconesQuery } from '../store/slices/apiSlice'
+import { useGetUnidadesQuery, useGetUnidadeMedicosQuery, useGetLastUpdateQuery, useGetIconesQuery } from '../store/slices/apiSlice'
 import MapLegend from '../components/MapLegend'
 import 'leaflet/dist/leaflet.css'
+import { trackBusca, trackVisualizacaoUnidade, trackCliqueMapaUnidade, trackContatoUnidade, trackRedeSocialUnidade, trackFiltroMapa } from '../utils/analytics'
 
 // Custom Marker component to handle zoom on click and hover effects
 const CustomMarker = ({ unidade, onClick, customIcon, isSelected }) => {
@@ -29,28 +31,35 @@ const CustomMarker = ({ unidade, onClick, customIcon, isSelected }) => {
   const [isHovered, setIsHovered] = useState(false)
 
   const handleClick = () => {
-    // Zoom to the marker position
-    map.setView([unidade.latitude, unidade.longitude], 18) // Zoom level 18 for close zoom
+    // Zoom moderado que mantém ícones visíveis
+    const targetZoom = 16
+    
+    // Aplica zoom com animação suave, centralizando no marcador
+    map.flyTo([unidade.latitude, unidade.longitude], targetZoom, {
+      duration: 0.8,
+      easeLinearity: 0.25
+    })
+    
     onClick(unidade)
   }
 
-  // Tamanhos dos ícones: normal, hover e selecionado
+  // Tamanhos dos ícones: normal, hover e selecionado (aumentados para melhor visibilidade)
   const getIconSize = () => {
-    if (isSelected) return [48, 72]
-    if (isHovered) return [35, 53] // 40% maior no hover
-    return [25, 41]
+    if (isSelected) return [55, 82] // Ícone selecionado bem maior
+    if (isHovered) return [45, 67] // Ícone no hover maior
+    return [35, 57] // Ícone normal maior que antes (era 25x41)
   }
 
   const getIconAnchor = () => {
-    if (isSelected) return [24, 72]
-    if (isHovered) return [17.5, 53]
-    return [12, 41]
+    if (isSelected) return [27.5, 82]
+    if (isHovered) return [22.5, 67]
+    return [17.5, 57]
   }
 
   const getShadowSize = () => {
-    if (isSelected) return [80, 80]
-    if (isHovered) return [55, 55]
-    return [41, 41]
+    if (isSelected) return [90, 90]
+    if (isHovered) return [65, 65]
+    return [50, 50]
   }
 
   // Criar ícone com tamanho dinâmico
@@ -269,25 +278,47 @@ export default function MapPage() {
   }, []) // Executa apenas uma vez ao montar
 
   const { data, isLoading, isError, error } = useGetUnidadesQuery(undefined, {
-    refetchOnMountOrArgChange: 30, // Refetch se dados tiverem mais de 30 segundos
+    refetchOnMountOrArgChange: 300, // Refetch apenas se dados tiverem mais de 5 minutos
+    refetchOnFocus: false, // Não refetch ao voltar para a aba
   })
   const { data: medicosData, isLoading: medicosLoading } = useGetUnidadeMedicosQuery(
     selectedUnidade?.id,
-    { skip: !selectedUnidade }
+    { 
+      skip: !selectedUnidade,
+      refetchOnMountOrArgChange: false, // Usa cache sempre que possível
+    }
   )
-  const { data: bairrosData } = useGetBairrosQuery()
-  const { data: especialidadesData } = useGetEspecialidadesQuery()
-  const { data: lastUpdateData } = useGetLastUpdateQuery()
+  const { data: lastUpdateData } = useGetLastUpdateQuery(undefined, {
+    refetchOnMountOrArgChange: 300, // Refetch apenas após 5 minutos
+  })
   const { data: iconesData } = useGetIconesQuery({ ativo: 'true' }, {
-    refetchOnMountOrArgChange: 30, // Refetch ícones também
+    refetchOnMountOrArgChange: 300, // Refetch ícones após 5 minutos
+    refetchOnFocus: false, // Não refetch ao voltar para a aba
   })
 
   // Extrair dados antes dos early returns
   const unidades = data?.data || []
   const medicos = medicosData?.data || []
-  const bairros = bairrosData?.data?.map(b => b.nome).sort() || []
-  const especialidades = especialidadesData?.data || []
   const lastUpdate = lastUpdateData?.data?.lastUpdate || null
+  
+  // Extrair bairros únicos das unidades (não precisa query separada)
+  const bairros = useMemo(() => {
+    const bairrosSet = new Set(unidades.map(u => u.bairro).filter(Boolean))
+    return Array.from(bairrosSet).sort()
+  }, [unidades])
+  
+  // Extrair especialidades únicas das unidades (não precisa query separada)
+  const especialidades = useMemo(() => {
+    const espMap = new Map()
+    unidades.forEach(u => {
+      u.especialidades?.forEach(esp => {
+        if (!espMap.has(esp.id)) {
+          espMap.set(esp.id, esp)
+        }
+      })
+    })
+    return Array.from(espMap.values())
+  }, [unidades])
 
   // Formatar data da última atualização
   const formatarDataAtualizacao = () => {
@@ -326,24 +357,27 @@ export default function MapPage() {
     // Se tem busca por texto, usar ela (prioritária)
     if (searchText.trim()) {
       const textLower = searchText.toLowerCase().trim()
-      
+
       filtered = filtered.filter(unidade => {
         // Buscar no nome da unidade
         const nomeMatch = unidade.nome?.toLowerCase().includes(textLower)
-        
+
         // Buscar no bairro
         const bairroMatch = unidade.bairro?.toLowerCase().includes(textLower)
-        
+
         // Buscar nas especialidades
         const especialidadeMatch = unidade.especialidades?.some(
           esp => esp.nome?.toLowerCase().includes(textLower)
         )
-        
-        return nomeMatch || bairroMatch || especialidadeMatch
+
+        // Buscar por "sala de vacina"
+        const salaVacinaMatch = (textLower.includes('vacina') || textLower.includes('sala')) && unidade.sala_vacina
+
+        return nomeMatch || bairroMatch || especialidadeMatch || salaVacinaMatch
       })
       return filtered
     }
-    
+
     // Se não tem busca por texto, usar busca por select (comportamento antigo)
     if (!searchType || !searchValue) {
       return filtered
@@ -356,6 +390,8 @@ export default function MapPage() {
         return unidade.id === searchValue
       } else if (searchType === 'especialidade') {
         return unidade.especialidades?.some(esp => esp.id === searchValue)
+      } else if (searchType === 'sala_vacina') {
+        return unidade.sala_vacina === true
       }
       return true
     })
@@ -369,6 +405,7 @@ export default function MapPage() {
     let byName = 0
     let byBairro = 0
     let byEspecialidade = 0
+    let bySalaVacina = 0
 
     filteredUnidades.forEach(unidade => {
       if (unidade.nome?.toLowerCase().includes(textLower)) byName++
@@ -376,9 +413,12 @@ export default function MapPage() {
       if (unidade.especialidades?.some(esp => esp.nome?.toLowerCase().includes(textLower))) {
         byEspecialidade++
       }
+      if ((textLower.includes('vacina') || textLower.includes('sala')) && unidade.sala_vacina) {
+        bySalaVacina++
+      }
     })
 
-    return { byName, byBairro, byEspecialidade }
+    return { byName, byBairro, byEspecialidade, bySalaVacina }
   }, [searchText, filteredUnidades])
 
   // Handler para reset da busca
@@ -387,8 +427,6 @@ export default function MapPage() {
     setSearchValue(null)
     setSearchText('')
   }
-
-  console.log('GetUnidades Query Result:', { data, isLoading, isError, error });
 
   if (isLoading) {
     return (
@@ -428,17 +466,27 @@ export default function MapPage() {
     )
   }
 
-  console.log('Unidades para renderizar no mapa:', unidades);
-  if (unidades.length === 0) {
-    console.warn('Nenhuma unidade encontrada para exibir no mapa.');
-  }
-
   const handleMarkerClick = (unidade) => {
     setSelectedUnidade(unidade)
     setSidebarCollapsed(false)
+
+    // Rastrear clique no mapa
+    trackCliqueMapaUnidade({
+      unidadeId: unidade.id,
+      unidadeNome: unidade.nome,
+      latitude: unidade.latitude,
+      longitude: unidade.longitude,
+    })
+
+    // Rastrear visualização da unidade
+    trackVisualizacaoUnidade({
+      unidadeId: unidade.id,
+      unidadeNome: unidade.nome,
+      origem: 'mapa',
+    })
   }
 
-  const apiBaseUrl = import.meta.env.VITE_API_URL?.replace('/api', '') || 'http://localhost:3001'
+  const apiBaseUrl = ''
 
   // Sidebar responsivo
   const sidebarWidth = isMobile ? window.innerWidth * 0.85 : 400 // 85% da tela no mobile
@@ -600,7 +648,7 @@ export default function MapPage() {
                     <div style={{
                       display: 'flex',
                       alignItems: 'center',
-                      marginBottom: '24px',
+                      marginBottom: '12px',
                       gap: '12px',
                     }}>
                       <div style={{
@@ -623,6 +671,13 @@ export default function MapPage() {
                         onClick={() => {
                           const cleanNumber = selectedUnidade.whatsapp.replace(/\D/g, '')
                           window.open(`https://wa.me/55${cleanNumber}`, '_blank')
+
+                          // Rastrear clique no WhatsApp
+                          trackContatoUnidade({
+                            tipo: 'whatsapp',
+                            unidadeId: selectedUnidade.id,
+                            unidadeNome: selectedUnidade.nome,
+                          })
                         }}
                       >
                         Abrir WhatsApp
@@ -630,7 +685,73 @@ export default function MapPage() {
                     </div>
                   )}
 
+                  {/* Como Chegar */}
+                  {selectedUnidade.latitude && selectedUnidade.longitude && (
+                    <div style={{
+                      display: 'flex',
+                      alignItems: 'center',
+                      marginBottom: '24px',
+                      gap: '12px',
+                    }}>
+                      <div style={{
+                        display: 'flex',
+                        alignItems: 'flex-start',
+                        color: '#666',
+                        flex: 1,
+                      }}>
+                        <CompassOutlined style={{ marginRight: '8px', marginTop: '4px', fontSize: '16px', color: '#1890ff' }} />
+                        <span style={{ flex: 1 }}>Ver rota no mapa</span>
+                      </div>
+                      <Button
+                        type="primary"
+                        icon={<CompassOutlined />}
+                        size="small"
+                        onClick={() => {
+                          const destination = `${selectedUnidade.latitude},${selectedUnidade.longitude}`
+                          window.open(`https://www.google.com/maps/dir/?api=1&destination=${destination}`, '_blank')
+
+                          // Rastrear clique em Como Chegar
+                          trackContatoUnidade({
+                            tipo: 'como_chegar',
+                            unidadeId: selectedUnidade.id,
+                            unidadeNome: selectedUnidade.nome,
+                          })
+                        }}
+                      >
+                        Como Chegar
+                      </Button>
+                    </div>
+                  )}
+
                   <Divider />
+
+                  {/* Sala de Vacina */}
+                  {selectedUnidade.sala_vacina && (
+                    <div style={{ marginBottom: '24px' }}>
+                      <div style={{
+                        padding: '16px',
+                        backgroundColor: '#f0f7ff',
+                        borderRadius: '8px',
+                        border: '2px solid #1890ff',
+                        display: 'flex',
+                        alignItems: 'center',
+                        gap: '12px',
+                      }}>
+                        <MedicineBoxOutlined style={{ fontSize: '24px', color: '#1890ff' }} />
+                        <div style={{ flex: 1 }}>
+                          <div style={{
+                            fontSize: '16px',
+                            fontWeight: 'bold',
+                            color: '#1890ff',
+                            marginBottom: '4px',
+                            whiteSpace: 'pre-line',
+                          }}>
+                            {selectedUnidade.sala_vacina_info || 'Sala de Vacina Disponível'}
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+                  )}
 
                   {/* Especialidades */}
                   <div style={{ marginBottom: '24px' }}>
@@ -704,6 +825,14 @@ export default function MapPage() {
                               fontWeight: '500',
                               transition: 'all 0.3s',
                               border: '1px solid #d6e4ff',
+                            }}
+                            onClick={() => {
+                              // Rastrear clique em rede social
+                              trackRedeSocialUnidade({
+                                redeSocial: rede.nome_rede,
+                                unidadeId: selectedUnidade.id,
+                                unidadeNome: selectedUnidade.nome,
+                              })
                             }}
                             onMouseEnter={(e) => {
                               e.currentTarget.style.backgroundColor = '#e6f7ff'
@@ -799,10 +928,10 @@ export default function MapPage() {
                         prefix={<SearchOutlined style={{ color: '#999' }} />}
                         suffix={
                           searchText ? (
-                            <CloseCircleOutlined 
+                            <CloseCircleOutlined
                               onClick={() => setSearchText('')}
-                              style={{ 
-                                color: '#999', 
+                              style={{
+                                color: '#999',
                                 cursor: 'pointer',
                                 fontSize: '14px'
                               }}
@@ -817,6 +946,28 @@ export default function MapPage() {
                           if (newValue && (searchType || searchValue)) {
                             setSearchType(null)
                             setSearchValue(null)
+                          }
+                        }}
+                        onPressEnter={(e) => {
+                          const termo = e.target.value.trim()
+                          if (termo) {
+                            // Rastrear busca por texto
+                            trackBusca({
+                              tipo: 'texto_livre',
+                              termo: termo,
+                              resultados: filteredUnidades.length,
+                            })
+                          }
+                        }}
+                        onBlur={(e) => {
+                          const termo = e.target.value.trim()
+                          if (termo) {
+                            // Rastrear busca quando usuário sair do campo
+                            trackBusca({
+                              tipo: 'texto_livre',
+                              termo: termo,
+                              resultados: filteredUnidades.length,
+                            })
                           }
                         }}
                         size="large"
@@ -844,7 +995,12 @@ export default function MapPage() {
                             value={searchType}
                             onChange={(value) => {
                               setSearchType(value)
-                              setSearchValue(null)
+                              // Se selecionar "sala_vacina", já aplica o filtro automaticamente
+                              if (value === 'sala_vacina') {
+                                setSearchValue(true)
+                              } else {
+                                setSearchValue(null)
+                              }
                             }}
                             allowClear
                             onClear={handleResetSearch}
@@ -853,6 +1009,7 @@ export default function MapPage() {
                             <Select.Option value="bairro">Buscar por Bairro</Select.Option>
                             <Select.Option value="unidade">Buscar por Unidade</Select.Option>
                             <Select.Option value="especialidade">Buscar por Especialidade</Select.Option>
+                            <Select.Option value="sala_vacina">Buscar por Sala de Vacina</Select.Option>
                           </Select>
                         </>
                       )}
@@ -863,7 +1020,18 @@ export default function MapPage() {
                           className="custom-select"
                           style={{ width: '100%' }}
                           value={searchValue}
-                          onChange={setSearchValue}
+                          onChange={(value) => {
+                            setSearchValue(value)
+                            if (value) {
+                              // Rastrear busca por bairro
+                              const resultados = unidades.filter(u => u.bairro === value).length
+                              trackBusca({
+                                tipo: 'bairro',
+                                termo: value,
+                                resultados: resultados,
+                              })
+                            }
+                          }}
                           showSearch
                           allowClear
                           size="large"
@@ -885,7 +1053,20 @@ export default function MapPage() {
                           className="custom-select"
                           style={{ width: '100%' }}
                           value={searchValue}
-                          onChange={setSearchValue}
+                          onChange={(value) => {
+                            setSearchValue(value)
+                            if (value) {
+                              // Rastrear busca por unidade
+                              const unidade = unidades.find(u => u.id === value)
+                              if (unidade) {
+                                trackBusca({
+                                  tipo: 'unidade',
+                                  termo: unidade.nome,
+                                  resultados: 1,
+                                })
+                              }
+                            }
+                          }}
                           showSearch
                           allowClear
                           size="large"
@@ -907,7 +1088,23 @@ export default function MapPage() {
                           className="custom-select"
                           style={{ width: '100%' }}
                           value={searchValue}
-                          onChange={setSearchValue}
+                          onChange={(value) => {
+                            setSearchValue(value)
+                            if (value) {
+                              // Rastrear busca por especialidade
+                              const especialidade = especialidades.find(e => e.id === value)
+                              if (especialidade) {
+                                const resultados = unidades.filter(u =>
+                                  u.especialidades?.some(esp => esp.id === value)
+                                ).length
+                                trackBusca({
+                                  tipo: 'especialidade',
+                                  termo: especialidade.nome,
+                                  resultados: resultados,
+                                })
+                              }
+                            }
+                          }}
                           showSearch
                           allowClear
                           size="large"
@@ -977,20 +1174,26 @@ export default function MapPage() {
                             <div style={{ display: 'flex', flexDirection: 'column', gap: '2px' }}>
                               {searchStats.byName > 0 && (
                                 <div>
-                                  • <Tag color="blue" style={{ fontSize: '11px' }}>{searchStats.byName}</Tag> 
+                                  • <Tag color="blue" style={{ fontSize: '11px' }}>{searchStats.byName}</Tag>
                                   no nome da unidade
                                 </div>
                               )}
                               {searchStats.byBairro > 0 && (
                                 <div>
-                                  • <Tag color="green" style={{ fontSize: '11px' }}>{searchStats.byBairro}</Tag> 
+                                  • <Tag color="green" style={{ fontSize: '11px' }}>{searchStats.byBairro}</Tag>
                                   no bairro
                                 </div>
                               )}
                               {searchStats.byEspecialidade > 0 && (
                                 <div>
-                                  • <Tag color="purple" style={{ fontSize: '11px' }}>{searchStats.byEspecialidade}</Tag> 
+                                  • <Tag color="purple" style={{ fontSize: '11px' }}>{searchStats.byEspecialidade}</Tag>
                                   na especialidade
+                                </div>
+                              )}
+                              {searchStats.bySalaVacina > 0 && (
+                                <div>
+                                  • <Tag color="orange" style={{ fontSize: '11px' }}>{searchStats.bySalaVacina}</Tag>
+                                  com sala de vacina
                                 </div>
                               )}
                             </div>
@@ -1107,7 +1310,13 @@ export default function MapPage() {
         )}
 
         {/* Mapa */}
-        <div style={{ flex: 1, height: '100%', position: 'relative' }}>
+        <div style={{ 
+          flex: 1, 
+          height: '100%', 
+          minHeight: '500px', // Altura mínima para evitar CLS
+          position: 'relative',
+          backgroundColor: '#e5e3df' // Cor de fundo similar aos tiles para reduzir flash
+        }}>
           <MapContainer
             center={CORUMBA_CONFIG.center}
             zoom={CORUMBA_CONFIG.zoom}
@@ -1115,6 +1324,10 @@ export default function MapPage() {
             maxBoundsViscosity={1.0}
             zoomControl={false}
             style={{ height: '100%', width: '100%' }}
+            whenReady={(map) => {
+              // Força um resize após o mapa estar pronto para evitar shifts
+              setTimeout(() => map.target.invalidateSize(), 100)
+            }}
           >
             <ZoomControl position="topright" />
             <MapViewController 
@@ -1129,6 +1342,11 @@ export default function MapPage() {
             <TileLayer
               attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a>'
               url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
+              maxZoom={19}
+              minZoom={11}
+              keepBuffer={4}
+              updateWhenIdle={false}
+              updateWhenZooming={false}
             />
 
             {!isZooming && filteredUnidades.map((unidade) => {
@@ -1167,16 +1385,30 @@ export default function MapPage() {
           </MapContainer>
 
           {/* Legenda do Mapa */}
-          <MapLegend 
+          <MapLegend
             iconesData={iconesData}
             selectedIconUrl={selectedIconUrl}
+            unidades={filteredUnidades}
             onIconClick={(iconUrl) => {
               // Toggle: se clicar no mesmo ícone, desseleciona
-              setSelectedIconUrl(selectedIconUrl === iconUrl ? null : iconUrl)
+              const isDeselecting = selectedIconUrl === iconUrl
+              setSelectedIconUrl(isDeselecting ? null : iconUrl)
+
               // Limpar outros filtros ao usar filtro de ícone
               setSearchType(null)
               setSearchValue(null)
               setSearchText('')
+
+              // Rastrear filtro por ícone
+              if (!isDeselecting) {
+                const icone = iconesData?.data?.find(i => i.url === iconUrl)
+                const resultados = unidades.filter(u => u.icone_url === iconUrl).length
+                trackFiltroMapa({
+                  tipoFiltro: 'icone',
+                  valorFiltro: icone?.nome || 'Ícone customizado',
+                  resultados: resultados,
+                })
+              }
             }}
           />
         </div>
@@ -1240,7 +1472,7 @@ export default function MapPage() {
                     overflowY: 'auto',
                     paddingRight: '8px',
                   }}>
-                    {medicos.map((medico, index) => (
+                    {medicos.map((medico) => (
                       <div
                         key={medico.id}
                         style={{

@@ -46,8 +46,7 @@ const REDES_SOCIAIS_OPTIONS = [
 const getFullImageUrl = (url) => {
   if (!url) return ''
   if (url.startsWith('http')) return url
-  const apiBaseUrl = import.meta.env.VITE_API_URL?.replace('/api', '') || 'http://localhost:3001'
-  return `${apiBaseUrl}${url}`
+  return url
 }
 
 export default function UnidadesPage() {
@@ -65,7 +64,7 @@ export default function UnidadesPage() {
 
   // API hooks
   const { data, isLoading } = useGetUnidadesQuery({ page, limit: 20 })
-  const { data: medicosData } = useGetMedicosQuery({ ativo: 'true', limit: 1000 })
+  const { data: medicosData } = useGetMedicosQuery({ ativo: 'true', limit: 10000 })
   const { data: bairrosData } = useGetBairrosQuery({ ativo: true })
   const { data: iconesData } = useGetIconesQuery({ ativo: 'true' })
   const [createUnidade, { isLoading: creating }] = useCreateUnidadeMutation()
@@ -141,6 +140,7 @@ export default function UnidadesPage() {
       whatsapp: unidade.whatsapp,
       enfermeiro_responsavel: unidade.enfermeiro_responsavel,
       horario_atendimento: unidade.horario_atendimento,
+      sala_vacina: unidade.sala_vacina || false,
       ativo: unidade.ativo,
     })
 
@@ -183,6 +183,7 @@ export default function UnidadesPage() {
         whatsapp: values.whatsapp || null,
         enfermeiro_responsavel: values.enfermeiro_responsavel || null,
         horario_atendimento: values.horario_atendimento || null,
+        sala_vacina: values.sala_vacina || false,
         ativo: values.ativo ?? true,
         medicos: selectedMedicos,
         imagem_url: imageUrl || null,
@@ -394,15 +395,15 @@ export default function UnidadesPage() {
       title: 'Nome',
       dataIndex: 'nome',
       key: 'nome',
-      width: '25%',
+      width: 250,
       render: (text) => <Text strong>{text}</Text>
     },
-    { title: 'Endereço', dataIndex: 'endereco', key: 'endereco', width: '25%' },
+    { title: 'Endereço', dataIndex: 'endereco', key: 'endereco', width: 250 },
     {
       title: 'Especialidades',
       dataIndex: 'especialidades',
       key: 'especialidades',
-      width: '20%',
+      width: 200,
       render: (especialidades) => (
         <div style={{ display: 'flex', flexWrap: 'wrap', gap: '4px' }}>
           {especialidades && especialidades.length > 0 ? (
@@ -478,6 +479,7 @@ export default function UnidadesPage() {
         dataSource={data?.data || []}
         loading={isLoading}
         rowKey="id"
+        scroll={{ x: 1000 }}
         pagination={{
           current: page,
           pageSize: 20,
@@ -540,6 +542,14 @@ export default function UnidadesPage() {
             valuePropName="checked"
           >
             <Switch checkedChildren="Ativo" unCheckedChildren="Inativo" />
+          </Form.Item>
+
+          <Form.Item
+            label="Sala de Vacina"
+            name="sala_vacina"
+            valuePropName="checked"
+          >
+            <Switch checkedChildren="Sim" unCheckedChildren="Não" />
           </Form.Item>
 
           {/* Hidden fields for latitude/longitude */}

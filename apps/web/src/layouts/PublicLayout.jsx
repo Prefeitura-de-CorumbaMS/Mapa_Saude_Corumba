@@ -33,7 +33,7 @@ export default function PublicLayout() {
         lineHeight: isMobile ? '56px' : '64px',
       }}>
         <img 
-          src="http://localhost:3001/uploads/logo__horizontal_monocromatica.png" 
+          src="/uploads/logo__horizontal_monocromatica.png" 
           alt="Logo Prefeitura" 
           style={{ 
             height: isMobile ? '28px' : '40px',
@@ -52,7 +52,7 @@ export default function PublicLayout() {
           MAPA DA SAÚDE
         </span>
         <img 
-          src="http://localhost:3001/uploads/arte__horizontal_monocromatica.png" 
+          src="/uploads/arte__horizontal_monocromatica.png" 
           alt="Arte Horizontal" 
           style={{ 
             height: isMobile ? '40px' : '60px',

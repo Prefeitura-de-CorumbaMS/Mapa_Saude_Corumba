@@ -31,6 +31,7 @@ export const apiSlice = createApi({
   reducerPath: 'api',
   baseQuery: baseQueryWithReauth,
   tagTypes: ['Unidades', 'Medicos', 'Especialidades', 'Staging', 'Users', 'Audit', 'ETL', 'Mapeamentos', 'Bairros', 'Icones'],
+  keepUnusedDataFor: 300, // Cache por 5 minutos (300 segundos)
   endpoints: (builder) => ({
     // Auth
     login: builder.mutation({
@@ -52,6 +53,7 @@ export const apiSlice = createApi({
 
     getUnidadeMedicos: builder.query({
       query: (id) => `/unidades/${id}/medicos`,
+      keepUnusedDataFor: 300, // Cache por 5 minutos
     }),
 
     getUnidadeRedesSociais: builder.query({

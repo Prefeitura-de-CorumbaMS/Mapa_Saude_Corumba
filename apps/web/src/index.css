@@ -27,6 +27,7 @@ body {
   width: 100%;
   height: 100%;
   z-index: 1;
+  background: #e5e3df; /* Cor similar aos tiles para evitar flash */
 }
 
 .leaflet-tile-container {
@@ -35,6 +36,15 @@ body {
 
 .leaflet-tile {
   opacity: 1 !important;
+  /* Remove animação de fade para evitar CLS */
+  animation: none !important;
+  image-rendering: -webkit-optimize-contrast;
+  image-rendering: crisp-edges;
+}
+
+/* Preload skeleton para reduzir CLS */
+.leaflet-tile-pane {
+  will-change: transform;
 }
 
 /* Fix for modal maps */

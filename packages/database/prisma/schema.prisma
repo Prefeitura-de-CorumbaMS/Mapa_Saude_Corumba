@@ -39,7 +39,7 @@ model STAGING_Info_Origem {
 
   @@index([status_processamento])
   @@index([id_origem])
-  @@map("STAGING_Info_Origem")
+  @@map("staging_info_origem")
 }
 
 enum StatusProcessamento {
@@ -66,6 +66,8 @@ model PROD_Unidade_Saude {
   horario_atendimento String?                          @db.Text
   imagem_url          String?                          @db.VarChar(500)
   icone_url           String?                          @db.VarChar(500)
+  sala_vacina         Boolean                          @default(false)
+  sala_vacina_info    String?                          @db.Text
   id_origem           String                           @unique @db.VarChar(100)
   ativo               Boolean                          @default(true)
   created_at          DateTime                         @default(now())
@@ -78,7 +80,8 @@ model PROD_Unidade_Saude {
 
   @@index([ativo])
   @@index([latitude, longitude])
-  @@map("PROD_Unidade_Saude")
+  @@index([sala_vacina])
+  @@map("prod_unidade_saude")
 }
 
 model PROD_Medico {
@@ -98,15 +101,16 @@ model PROD_Medico {
 
   @@index([ativo])
   @@index([cpf])
-  @@map("PROD_Medico")
+  @@map("prod_medico")
 }
 
 model PROD_Especialidade {
-  id                Int                              @id @default(autoincrement())
-  nome              String                           @unique @db.VarChar(255)
-  ativo             Boolean                          @default(true)
-  created_at        DateTime                         @default(now())
-  updated_at        DateTime                         @updatedAt
+  id                    Int                              @id @default(autoincrement())
+  nome                  String                           @unique @db.VarChar(255)
+  ativo                 Boolean                          @default(true)
+  visivel_para_usuario  Boolean                          @default(true) // Define se a especialidade aparece para usuários públicos
+  created_at            DateTime                         @default(now())
+  updated_at            DateTime                         @updatedAt
 
   // Relações
   unidades          Junction_Unidade_Especialidade[]
@@ -114,7 +118,8 @@ model PROD_Especialidade {
   mapeamentos       Especialidade_Mapeamento[]       @relation("EspecialidadeNormalizada")
 
   @@index([ativo])
-  @@map("PROD_Especialidade")
+  @@index([visivel_para_usuario])
+  @@map("prod_especialidade")
 }
 
 model PROD_Unidade_RedeSocial {
@@ -128,7 +133,7 @@ model PROD_Unidade_RedeSocial {
   unidade     PROD_Unidade_Saude  @relation(fields: [id_unidade], references: [id], onDelete: Cascade)
 
   @@index([id_unidade])
-  @@map("PROD_Unidade_RedeSocial")
+  @@map("prod_unidade_redesocial")
 }
 
 // ============================================================================
@@ -144,7 +149,7 @@ model Junction_Unidade_Especialidade {
   especialidade     PROD_Especialidade               @relation(fields: [id_especialidade], references: [id], onDelete: Cascade)
   
   @@id([id_unidade, id_especialidade])
-  @@map("Junction_Unidade_Especialidade")
+  @@map("junction_unidade_especialidade")
 }
 
 model Junction_Medico_Especialidade {
@@ -156,7 +161,7 @@ model Junction_Medico_Especialidade {
   especialidade     PROD_Especialidade               @relation(fields: [id_especialidade], references: [id], onDelete: Cascade)
 
   @@id([id_medico, id_especialidade])
-  @@map("Junction_Medico_Especialidade")
+  @@map("junction_medico_especialidade")
 }
 
 model Junction_Unidade_Medico {
@@ -170,7 +175,7 @@ model Junction_Unidade_Medico {
   @@id([id_unidade, id_medico])
   @@index([id_unidade])
   @@index([id_medico])
-  @@map("Junction_Unidade_Medico")
+  @@map("junction_unidade_medico")
 }
 
 // ============================================================================
@@ -192,7 +197,7 @@ model Especialidade_Mapeamento {
   @@index([especialidade_bruta])
   @@index([especialidade_normalizada])
   @@index([criado_por])
-  @@map("Especialidade_Mapeamento")
+  @@map("especialidade_mapeamento")
 }
 
 // ============================================================================
@@ -217,7 +222,7 @@ model User {
   @@index([username])
   @@index([email])
   @@index([role])
-  @@map("User")
+  @@map("user")
 }
 
 enum UserRole {
@@ -248,7 +253,7 @@ model AUDIT_LOG {
   @@index([user_id])
   @@index([timestamp])
   @@index([correlation_id])
-  @@map("AUDIT_LOG")
+  @@map("audit_log")
 }
 
 enum OperacaoAudit {
@@ -273,7 +278,7 @@ model ETL_Execution {
   
   @@index([status])
   @@index([started_at])
-  @@map("ETL_Execution")
+  @@map("etl_execution")
 }
 
 enum ETLStatus {
@@ -296,7 +301,7 @@ model PROD_Bairro {
 
   @@index([nome])
   @@index([ativo])
-  @@map("PROD_Bairro")
+  @@map("prod_bairro")
 }
 
 model PROD_Icone {
@@ -310,5 +315,5 @@ model PROD_Icone {
 
   @@index([ativo])
   @@index([ordem])
-  @@map("PROD_Icone")
+  @@map("prod_icone")
 }

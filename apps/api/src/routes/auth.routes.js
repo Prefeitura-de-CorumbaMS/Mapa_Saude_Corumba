@@ -1,6 +1,7 @@
 const express = require('express');
 const bcrypt = require('bcryptjs');
 const jwt = require('jsonwebtoken');
+const { body, validationResult } = require('express-validator');
 const { prisma } = require('@sigls/database');
 const { logger } = require('@sigls/logger');
 const { asyncHandler } = require('../middleware/error.middleware');
@@ -15,15 +16,30 @@ const router = express.Router();
  * POST /api/auth/login
  * Autenticação de usuário
  */
-router.post('/login', asyncHandler(async (req, res) => {
-  const { username, password } = req.body;
-  
-  if (!username || !password) {
-    return res.status(400).json({
-      success: false,
-      error: 'Username and password are required',
-    });
-  }
+router.post('/login',
+  [
+    body('username')
+      .trim()
+      .isLength({ min: 3, max: 50 })
+      .withMessage('Username deve ter entre 3 e 50 caracteres')
+      .matches(/^[a-zA-Z0-9_-]+$/)
+      .withMessage('Username deve conter apenas letras, números, _ ou -'),
+    body('password')
+      .isLength({ min: 6 })
+      .withMessage('Password deve ter no mínimo 6 caracteres'),
+  ],
+  asyncHandler(async (req, res) => {
+    // Validar entrada
+    const errors = validationResult(req);
+    if (!errors.isEmpty()) {
+      return res.status(400).json({
+        success: false,
+        error: 'Dados inválidos',
+        details: errors.array(),
+      });
+    }
+
+    const { username, password } = req.body;
   
   // Buscar usuário
   const user = await prisma.user.findUnique({

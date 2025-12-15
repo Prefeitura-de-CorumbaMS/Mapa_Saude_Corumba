@@ -43,3 +43,5 @@ prisma/migrations/
 # Temporary
 tmp/
 temp/
+
+.venv/

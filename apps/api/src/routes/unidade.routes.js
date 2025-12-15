@@ -45,7 +45,10 @@ router.get('/', asyncHandler(async (req, res) => {
   // Transformar dados para incluir especialidades e redes sociais diretamente
   const unidadesFormatted = unidades.map(u => ({
     ...u,
-    especialidades: u.especialidades.map(e => e.especialidade),
+    // Filtrar apenas especialidades ativas E visíveis para o usuário
+    especialidades: u.especialidades
+      .map(e => e.especialidade)
+      .filter(e => e.ativo && e.visivel_para_usuario),
     redes_sociais: u.redes_sociais,
   }));
 
@@ -91,7 +94,10 @@ router.get('/:id', asyncHandler(async (req, res) => {
     success: true,
     data: {
       ...unidade,
-      especialidades: unidade.especialidades.map(e => e.especialidade),
+      // Filtrar apenas especialidades ativas E visíveis para o usuário
+      especialidades: unidade.especialidades
+        .map(e => e.especialidade)
+        .filter(e => e.ativo && e.visivel_para_usuario),
       redes_sociais: unidade.redes_sociais,
     },
   });
@@ -102,7 +108,7 @@ router.get('/:id', asyncHandler(async (req, res) => {
  * Cria nova unidade (requer autenticação)
  */
 router.post('/', authenticate, requireAdmin, asyncHandler(async (req, res) => {
-  const { nome, endereco, bairro, latitude, longitude, telefone, whatsapp, enfermeiro_responsavel, horario_atendimento, id_origem, especialidades = [], medicos = [] } = req.body;
+  const { nome, endereco, bairro, latitude, longitude, telefone, whatsapp, enfermeiro_responsavel, horario_atendimento, sala_vacina, id_origem, especialidades = [], medicos = [] } = req.body;
 
   if (!nome || latitude === undefined || longitude === undefined || !id_origem) {
     return res.status(400).json({
@@ -123,6 +129,7 @@ router.post('/', authenticate, requireAdmin, asyncHandler(async (req, res) => {
       whatsapp,
       enfermeiro_responsavel,
       horario_atendimento,
+      sala_vacina: sala_vacina || false,
       id_origem,
     },
   });
@@ -151,16 +158,21 @@ router.post('/', authenticate, requireAdmin, asyncHandler(async (req, res) => {
       where: { id: { in: medicos } },
       include: {
         especialidades: {
-          select: { id_especialidade: true },
+          include: {
+            especialidade: true, // Incluir dados completos da especialidade para filtrar
+          },
         },
       },
     });
 
-    // Obter IDs únicos de especialidades dos médicos
+    // Obter IDs únicos de especialidades dos médicos (apenas visíveis para usuário)
     const especialidadesUnicas = new Set();
     medicosComEspecialidades.forEach(medico => {
       medico.especialidades.forEach(esp => {
-        especialidadesUnicas.add(esp.id_especialidade);
+        // Filtrar apenas especialidades ativas E visíveis para o usuário
+        if (esp.especialidade.ativo && esp.especialidade.visivel_para_usuario) {
+          especialidadesUnicas.add(esp.id_especialidade);
+        }
       });
     });
 
@@ -195,7 +207,7 @@ router.post('/', authenticate, requireAdmin, asyncHandler(async (req, res) => {
  */
 router.put('/:id', authenticate, requireAdmin, asyncHandler(async (req, res) => {
   const { id } = req.params;
-  const { nome, endereco, bairro, latitude, longitude, telefone, whatsapp, enfermeiro_responsavel, horario_atendimento, ativo, imagem_url, icone_url, especialidades, medicos } = req.body;
+  const { nome, endereco, bairro, latitude, longitude, telefone, whatsapp, enfermeiro_responsavel, horario_atendimento, sala_vacina, ativo, imagem_url, icone_url, especialidades, medicos } = req.body;
 
   const updateData = {};
   if (nome) updateData.nome = nome;
@@ -207,6 +219,7 @@ router.put('/:id', authenticate, requireAdmin, asyncHandler(async (req, res) => 
   if (whatsapp !== undefined) updateData.whatsapp = whatsapp;
   if (enfermeiro_responsavel !== undefined) updateData.enfermeiro_responsavel = enfermeiro_responsavel;
   if (horario_atendimento !== undefined) updateData.horario_atendimento = horario_atendimento;
+  if (typeof sala_vacina === 'boolean') updateData.sala_vacina = sala_vacina;
   if (typeof ativo === 'boolean') updateData.ativo = ativo;
   if (imagem_url !== undefined) updateData.imagem_url = imagem_url;
   if (icone_url !== undefined) updateData.icone_url = icone_url;
@@ -260,16 +273,21 @@ router.put('/:id', authenticate, requireAdmin, asyncHandler(async (req, res) => 
         where: { id: { in: medicos } },
         include: {
           especialidades: {
-            select: { id_especialidade: true },
+            include: {
+              especialidade: true, // Incluir dados completos da especialidade para filtrar
+            },
           },
         },
       });
 
-      // Obter IDs únicos de especialidades dos médicos
+      // Obter IDs únicos de especialidades dos médicos (apenas visíveis para usuário)
       const especialidadesUnicas = new Set();
       medicosComEspecialidades.forEach(medico => {
         medico.especialidades.forEach(esp => {
-          especialidadesUnicas.add(esp.id_especialidade);
+          // Filtrar apenas especialidades ativas E visíveis para o usuário
+          if (esp.especialidade.ativo && esp.especialidade.visivel_para_usuario) {
+            especialidadesUnicas.add(esp.id_especialidade);
+          }
         });
       });
 
@@ -377,7 +395,10 @@ router.get('/:id/medicos', asyncHandler(async (req, res) => {
     .filter(m => m.ativo)
     .map(m => ({
       ...m,
-      especialidades: m.especialidades.map(e => e.especialidade),
+      // Filtrar apenas especialidades ativas E visíveis para o usuário
+      especialidades: m.especialidades
+        .map(e => e.especialidade)
+        .filter(e => e.ativo && e.visivel_para_usuario),
     }));
 
   // Ordenar por nome

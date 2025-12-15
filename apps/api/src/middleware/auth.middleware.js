@@ -33,7 +33,7 @@ async function authenticate(req, res, next) {
     
     // Setar variável de sessão MySQL para os triggers usarem
     try {
-      await prisma.$executeRawUnsafe(`SET @current_user_id = ${decoded.userId}`);
+      await prisma.$executeRaw`SET @current_user_id = ${decoded.userId}`;
     } catch (error) {
       logger.error('Failed to set MySQL session variable', {
         error: error.message,

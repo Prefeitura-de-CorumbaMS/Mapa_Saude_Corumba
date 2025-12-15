@@ -3,6 +3,7 @@ require('dotenv').config({ path: path.join(__dirname, '../../../.env') });
 const express = require('express');
 const cors = require('cors');
 const helmet = require('helmet');
+const rateLimit = require('express-rate-limit');
 const { requestLogger, errorLogger, logger } = require('@sigls/logger');
 
 const authRoutes = require('./routes/auth.routes');
@@ -30,12 +31,36 @@ const PORT = process.env.API_PORT || 3001;
 // MIDDLEWARE
 // ============================================================================
 
+// Rate Limiting
+// Limiter específico para rotas públicas (mapa público)
+const publicLimiter = rateLimit({
+  windowMs: 15 * 60 * 1000, // 15 minutos
+  max: 200, // 200 requisições por IP para usuários públicos
+  message: { success: false, error: 'Muitas requisições. Tente novamente mais tarde.' },
+  standardHeaders: true,
+  legacyHeaders: false,
+  // Pular requisições autenticadas (admins não devem ser limitados)
+  skip: (req) => {
+    // Se tiver token de autenticação válido, não aplicar rate limit
+    return req.headers.authorization && req.headers.authorization.startsWith('Bearer ');
+  },
+});
+
+const loginLimiter = rateLimit({
+  windowMs: 15 * 60 * 1000, // 15 minutos
+  max: 5, // 5 tentativas de login
+  skipSuccessfulRequests: true,
+  message: { success: false, error: 'Muitas tentativas de login. Tente novamente em 15 minutos.' },
+  standardHeaders: true,
+  legacyHeaders: false,
+});
+
 // Security
 app.use(helmet({
   contentSecurityPolicy: {
     directives: {
       ...helmet.contentSecurityPolicy.getDefaultDirectives(),
-      "img-src": ["'self'", "data:", "http://localhost:3001", "http://localhost:5173"],
+      "img-src": ["'self'", "data:", "http://localhost:3001", "http://localhost:3002", "http://localhost:5173", "http://localhost:5174", "http://localhost:5175", "http://localhost:5176"],
     },
   },
   crossOriginResourcePolicy: { policy: "cross-origin" },
@@ -47,6 +72,7 @@ const allowedOrigins = [
   'http://localhost:5174',
   'http://localhost:5175',
   'http://localhost:5176',
+  'https://mapasaude.projetoestrategico.app',
   process.env.FRONTEND_URL,
 ].filter(Boolean);
 
@@ -88,12 +114,14 @@ app.get('/health', (req, res) => {
 });
 
 // API routes
+// Aplicar rate limit geral apenas em rotas públicas específicas
+app.use('/api/auth/login', loginLimiter);
 app.use('/api/auth', authRoutes);
 app.use('/api/users', userRoutes);
 app.use('/api/staging', stagingRoutes);
-app.use('/api/unidades', unidadeRoutes);
-app.use('/api/medicos', medicoRoutes);
-app.use('/api/especialidades', especialidadeRoutes);
+app.use('/api/unidades', publicLimiter, unidadeRoutes); // Rate limit público para mapa
+app.use('/api/medicos', publicLimiter, medicoRoutes); // Rate limit público para mapa
+app.use('/api/especialidades', publicLimiter, especialidadeRoutes); // Rate limit público
 app.use('/api/bairros', bairroRoutes);
 app.use('/api/icones', iconeRoutes);
 app.use('/api/audit', auditRoutes);
