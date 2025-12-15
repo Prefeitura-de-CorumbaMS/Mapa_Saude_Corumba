@@ -22,6 +22,7 @@ import L from 'leaflet'
 import { useGetUnidadesQuery, useGetUnidadeMedicosQuery, useGetLastUpdateQuery, useGetIconesQuery } from '../store/slices/apiSlice'
 import MapLegend from '../components/MapLegend'
 import 'leaflet/dist/leaflet.css'
+import { trackBusca, trackVisualizacaoUnidade, trackCliqueMapaUnidade, trackContatoUnidade, trackRedeSocialUnidade, trackFiltroMapa } from '../utils/analytics'
 
 // Custom Marker component to handle zoom on click and hover effects
 const CustomMarker = ({ unidade, onClick, customIcon, isSelected }) => {
@@ -468,6 +469,21 @@ export default function MapPage() {
   const handleMarkerClick = (unidade) => {
     setSelectedUnidade(unidade)
     setSidebarCollapsed(false)
+
+    // Rastrear clique no mapa
+    trackCliqueMapaUnidade({
+      unidadeId: unidade.id,
+      unidadeNome: unidade.nome,
+      latitude: unidade.latitude,
+      longitude: unidade.longitude,
+    })
+
+    // Rastrear visualização da unidade
+    trackVisualizacaoUnidade({
+      unidadeId: unidade.id,
+      unidadeNome: unidade.nome,
+      origem: 'mapa',
+    })
   }
 
   const apiBaseUrl = ''
@@ -655,6 +671,13 @@ export default function MapPage() {
                         onClick={() => {
                           const cleanNumber = selectedUnidade.whatsapp.replace(/\D/g, '')
                           window.open(`https://wa.me/55${cleanNumber}`, '_blank')
+
+                          // Rastrear clique no WhatsApp
+                          trackContatoUnidade({
+                            tipo: 'whatsapp',
+                            unidadeId: selectedUnidade.id,
+                            unidadeNome: selectedUnidade.nome,
+                          })
                         }}
                       >
                         Abrir WhatsApp
@@ -686,6 +709,13 @@ export default function MapPage() {
                         onClick={() => {
                           const destination = `${selectedUnidade.latitude},${selectedUnidade.longitude}`
                           window.open(`https://www.google.com/maps/dir/?api=1&destination=${destination}`, '_blank')
+
+                          // Rastrear clique em Como Chegar
+                          trackContatoUnidade({
+                            tipo: 'como_chegar',
+                            unidadeId: selectedUnidade.id,
+                            unidadeNome: selectedUnidade.nome,
+                          })
                         }}
                       >
                         Como Chegar
@@ -796,6 +826,14 @@ export default function MapPage() {
                               transition: 'all 0.3s',
                               border: '1px solid #d6e4ff',
                             }}
+                            onClick={() => {
+                              // Rastrear clique em rede social
+                              trackRedeSocialUnidade({
+                                redeSocial: rede.nome_rede,
+                                unidadeId: selectedUnidade.id,
+                                unidadeNome: selectedUnidade.nome,
+                              })
+                            }}
                             onMouseEnter={(e) => {
                               e.currentTarget.style.backgroundColor = '#e6f7ff'
                               e.currentTarget.style.borderColor = '#1890ff'
@@ -890,10 +928,10 @@ export default function MapPage() {
                         prefix={<SearchOutlined style={{ color: '#999' }} />}
                         suffix={
                           searchText ? (
-                            <CloseCircleOutlined 
+                            <CloseCircleOutlined
                               onClick={() => setSearchText('')}
-                              style={{ 
-                                color: '#999', 
+                              style={{
+                                color: '#999',
                                 cursor: 'pointer',
                                 fontSize: '14px'
                               }}
@@ -908,6 +946,28 @@ export default function MapPage() {
                           if (newValue && (searchType || searchValue)) {
                             setSearchType(null)
                             setSearchValue(null)
+                          }
+                        }}
+                        onPressEnter={(e) => {
+                          const termo = e.target.value.trim()
+                          if (termo) {
+                            // Rastrear busca por texto
+                            trackBusca({
+                              tipo: 'texto_livre',
+                              termo: termo,
+                              resultados: filteredUnidades.length,
+                            })
+                          }
+                        }}
+                        onBlur={(e) => {
+                          const termo = e.target.value.trim()
+                          if (termo) {
+                            // Rastrear busca quando usuário sair do campo
+                            trackBusca({
+                              tipo: 'texto_livre',
+                              termo: termo,
+                              resultados: filteredUnidades.length,
+                            })
                           }
                         }}
                         size="large"
@@ -960,7 +1020,18 @@ export default function MapPage() {
                           className="custom-select"
                           style={{ width: '100%' }}
                           value={searchValue}
-                          onChange={setSearchValue}
+                          onChange={(value) => {
+                            setSearchValue(value)
+                            if (value) {
+                              // Rastrear busca por bairro
+                              const resultados = unidades.filter(u => u.bairro === value).length
+                              trackBusca({
+                                tipo: 'bairro',
+                                termo: value,
+                                resultados: resultados,
+                              })
+                            }
+                          }}
                           showSearch
                           allowClear
                           size="large"
@@ -982,7 +1053,20 @@ export default function MapPage() {
                           className="custom-select"
                           style={{ width: '100%' }}
                           value={searchValue}
-                          onChange={setSearchValue}
+                          onChange={(value) => {
+                            setSearchValue(value)
+                            if (value) {
+                              // Rastrear busca por unidade
+                              const unidade = unidades.find(u => u.id === value)
+                              if (unidade) {
+                                trackBusca({
+                                  tipo: 'unidade',
+                                  termo: unidade.nome,
+                                  resultados: 1,
+                                })
+                              }
+                            }
+                          }}
                           showSearch
                           allowClear
                           size="large"
@@ -1004,7 +1088,23 @@ export default function MapPage() {
                           className="custom-select"
                           style={{ width: '100%' }}
                           value={searchValue}
-                          onChange={setSearchValue}
+                          onChange={(value) => {
+                            setSearchValue(value)
+                            if (value) {
+                              // Rastrear busca por especialidade
+                              const especialidade = especialidades.find(e => e.id === value)
+                              if (especialidade) {
+                                const resultados = unidades.filter(u =>
+                                  u.especialidades?.some(esp => esp.id === value)
+                                ).length
+                                trackBusca({
+                                  tipo: 'especialidade',
+                                  termo: especialidade.nome,
+                                  resultados: resultados,
+                                })
+                              }
+                            }
+                          }}
                           showSearch
                           allowClear
                           size="large"
@@ -1285,17 +1385,30 @@ export default function MapPage() {
           </MapContainer>
 
           {/* Legenda do Mapa */}
-          <MapLegend 
+          <MapLegend
             iconesData={iconesData}
             selectedIconUrl={selectedIconUrl}
             unidades={filteredUnidades}
             onIconClick={(iconUrl) => {
               // Toggle: se clicar no mesmo ícone, desseleciona
-              setSelectedIconUrl(selectedIconUrl === iconUrl ? null : iconUrl)
+              const isDeselecting = selectedIconUrl === iconUrl
+              setSelectedIconUrl(isDeselecting ? null : iconUrl)
+
               // Limpar outros filtros ao usar filtro de ícone
               setSearchType(null)
               setSearchValue(null)
               setSearchText('')
+
+              // Rastrear filtro por ícone
+              if (!isDeselecting) {
+                const icone = iconesData?.data?.find(i => i.url === iconUrl)
+                const resultados = unidades.filter(u => u.icone_url === iconUrl).length
+                trackFiltroMapa({
+                  tipoFiltro: 'icone',
+                  valorFiltro: icone?.nome || 'Ícone customizado',
+                  resultados: resultados,
+                })
+              }
             }}
           />
         </div>
@@ -1359,7 +1472,7 @@ export default function MapPage() {
                     overflowY: 'auto',
                     paddingRight: '8px',
                   }}>
-                    {medicos.map((medico, index) => (
+                    {medicos.map((medico) => (
                       <div
                         key={medico.id}
                         style={{
