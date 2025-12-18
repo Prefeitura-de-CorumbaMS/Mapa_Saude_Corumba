@@ -1,0 +1,29 @@
+# Configuração de rotação de logs para Mapa de Saúde Corumbá
+# Este arquivo deve ser copiado para /etc/logrotate.d/mapasaude
+#
+# Comando: sudo cp scripts/logrotate-mapasaude /etc/logrotate.d/mapasaude
+
+# Logs do Nginx
+/var/log/nginx/mapasaude_*.log {
+    daily
+    rotate 14
+    compress
+    delaycompress
+    notifempty
+    create 0640 www-data adm
+    sharedscripts
+    postrotate
+        [ -f /var/run/nginx.pid ] && kill -USR1 `cat /var/run/nginx.pid`
+    endscript
+}
+
+# Logs da aplicação (PM2)
+/home/elizael/Mapa_Saude_Corumba/logs/*.log {
+    daily
+    rotate 7
+    compress
+    delaycompress
+    notifempty
+    missingok
+    copytruncate
+}

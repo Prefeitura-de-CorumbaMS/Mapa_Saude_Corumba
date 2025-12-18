@@ -60,7 +60,7 @@ app.use(helmet({
   contentSecurityPolicy: {
     directives: {
       ...helmet.contentSecurityPolicy.getDefaultDirectives(),
-      "img-src": ["'self'", "data:", "http://localhost:3001", "http://localhost:3002", "http://localhost:5173", "http://localhost:5174", "http://localhost:5175", "http://localhost:5176"],
+      "img-src": ["'self'", "data:", "http://localhost:8006", "http://localhost:8005", "http://localhost:3001", "http://localhost:3002", "http://localhost:5173", "http://localhost:5174", "http://localhost:5175", "http://localhost:5176"],
     },
   },
   crossOriginResourcePolicy: { policy: "cross-origin" },
@@ -68,6 +68,7 @@ app.use(helmet({
 
 // CORS - aceitar múltiplas origens
 const allowedOrigins = [
+  'http://localhost:8005',
   'http://localhost:5173',
   'http://localhost:5174',
   'http://localhost:5175',
