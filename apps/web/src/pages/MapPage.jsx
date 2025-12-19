@@ -248,6 +248,7 @@ export default function MapPage() {
   const [selectedUnidade, setSelectedUnidade] = useState(null)
   const [sidebarCollapsed, setSidebarCollapsed] = useState(false)
   const [medicosModalVisible, setMedicosModalVisible] = useState(false)
+  const [servicosModalVisible, setServicosModalVisible] = useState(false)
   const [selectedEspecialidade, setSelectedEspecialidade] = useState(null)
   const [especialidadeModalVisible, setEspecialidadeModalVisible] = useState(false)
   const [isMobile, setIsMobile] = useState(false)
@@ -851,22 +852,51 @@ export default function MapPage() {
                     </div>
                   )}
 
+                  {/* Botão Ver Serviços Disponíveis */}
+                  {selectedUnidade.servicos && selectedUnidade.servicos.length > 0 && (
+                    <div style={{ marginBottom: '16px' }}>
+                      <Button
+                        type="default"
+                        size="large"
+                        icon={<MedicineBoxOutlined />}
+                        onClick={() => setServicosModalVisible(true)}
+                        block
+                        style={{
+                          height: '48px',
+                          fontSize: '16px',
+                          fontWeight: 'bold',
+                          borderColor: '#1890ff',
+                          color: '#1890ff',
+                        }}
+                      >
+                        Ver Serviços Disponíveis
+                        <Badge
+                          count={selectedUnidade.servicos.length}
+                          style={{
+                            backgroundColor: '#1890ff',
+                            marginLeft: '12px',
+                          }}
+                        />
+                      </Button>
+                    </div>
+                  )}
+
                   {/* Botão Ver Médicos */}
-                  <div>
-                    <Button
-                      type="primary"
-                      size="large"
-                      icon={<UserOutlined />}
-                      onClick={() => setMedicosModalVisible(true)}
-                      block
-                      style={{
-                        height: '48px',
-                        fontSize: '16px',
-                        fontWeight: 'bold',
-                      }}
-                    >
-                      Ver Médicos que Atendem
-                      {!medicosLoading && medicos.length > 0 && (
+                  {medicos.length > 0 && (
+                    <div>
+                      <Button
+                        type="primary"
+                        size="large"
+                        icon={<UserOutlined />}
+                        onClick={() => setMedicosModalVisible(true)}
+                        block
+                        style={{
+                          height: '48px',
+                          fontSize: '16px',
+                          fontWeight: 'bold',
+                        }}
+                      >
+                        Ver Médicos que Atendem
                         <Badge
                           count={medicos.length}
                           style={{
@@ -876,9 +906,9 @@ export default function MapPage() {
                             fontWeight: 'bold',
                           }}
                         />
-                      )}
-                    </Button>
-                  </div>
+                      </Button>
+                    </div>
+                  )}
                 </div>
               </div>
             ) : (
@@ -1675,6 +1705,123 @@ export default function MapPage() {
                   />
                 )
               })()}
+            </div>
+          )}
+        </Modal>
+
+        {/* Modal de Serviços Disponíveis */}
+        <Modal
+          title={
+            <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+              <MedicineBoxOutlined style={{ color: '#1890ff', fontSize: '20px' }} />
+              <span>Serviços Disponíveis</span>
+            </div>
+          }
+          open={servicosModalVisible}
+          onCancel={() => setServicosModalVisible(false)}
+          footer={[
+            <Button key="close" type="primary" onClick={() => setServicosModalVisible(false)}>
+              Fechar
+            </Button>,
+          ]}
+          width={700}
+        >
+          {selectedUnidade && (
+            <div>
+              <div style={{
+                backgroundColor: '#f0f7ff',
+                padding: '12px 16px',
+                borderRadius: '8px',
+                marginBottom: '16px',
+                borderLeft: '4px solid #1890ff',
+              }}>
+                <div style={{ fontWeight: 'bold', color: '#1890ff', marginBottom: '4px' }}>
+                  {selectedUnidade.nome}
+                </div>
+                {(selectedUnidade.endereco || selectedUnidade.bairro) && (
+                  <div style={{ fontSize: '13px', color: '#666' }}>
+                    <EnvironmentOutlined style={{ marginRight: '6px' }} />
+                    {formatarEnderecoCompleto(selectedUnidade)}
+                  </div>
+                )}
+              </div>
+
+              {selectedUnidade.servicos && selectedUnidade.servicos.length > 0 ? (
+                <div>
+                  <div style={{
+                    marginBottom: '12px',
+                    fontSize: '14px',
+                    color: '#666',
+                    fontWeight: '500',
+                  }}>
+                    {selectedUnidade.servicos.length} {selectedUnidade.servicos.length === 1 ? 'serviço disponível' : 'serviços disponíveis'}
+                  </div>
+                  <div style={{
+                    maxHeight: '500px',
+                    overflowY: 'auto',
+                    paddingRight: '8px',
+                  }}>
+                    {selectedUnidade.servicos.map((servico, index) => (
+                      <div
+                        key={servico.id}
+                        style={{
+                          padding: '14px 16px',
+                          marginBottom: '10px',
+                          backgroundColor: '#f0f7ff',
+                          borderRadius: '8px',
+                          border: '1px solid #91d5ff',
+                          transition: 'all 0.3s',
+                        }}
+                        onMouseEnter={(e) => {
+                          e.currentTarget.style.backgroundColor = '#e6f7ff'
+                          e.currentTarget.style.borderColor = '#1890ff'
+                        }}
+                        onMouseLeave={(e) => {
+                          e.currentTarget.style.backgroundColor = '#f0f7ff'
+                          e.currentTarget.style.borderColor = '#91d5ff'
+                        }}
+                      >
+                        <div style={{
+                          display: 'flex',
+                          alignItems: 'flex-start',
+                          gap: '12px',
+                        }}>
+                          <div style={{
+                            minWidth: '28px',
+                            height: '28px',
+                            borderRadius: '50%',
+                            backgroundColor: '#1890ff',
+                            color: 'white',
+                            display: 'flex',
+                            alignItems: 'center',
+                            justifyContent: 'center',
+                            fontSize: '13px',
+                            fontWeight: 'bold',
+                            flexShrink: 0,
+                          }}>
+                            {index + 1}
+                          </div>
+                          <div style={{
+                            flex: 1,
+                            fontSize: '14px',
+                            color: '#096dd9',
+                            lineHeight: '1.6',
+                            fontWeight: '500',
+                          }}>
+                            {servico.descricao}
+                          </div>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              ) : (
+                <Empty
+                  image={Empty.PRESENTED_IMAGE_SIMPLE}
+                  description="Nenhum serviço cadastrado para esta unidade"
+                  style={{ padding: '40px 0' }}
+                />
+              )}
             </div>
           )}
         </Modal>
