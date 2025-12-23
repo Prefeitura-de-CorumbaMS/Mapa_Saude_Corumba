@@ -6,7 +6,9 @@ import { PictureOutlined, DownOutlined, UpOutlined } from '@ant-design/icons'
 const getFullImageUrl = (url) => {
   if (!url) return ''
   if (url.startsWith('http')) return url
-  const apiBaseUrl = import.meta.env.VITE_API_URL?.replace('/api', '') || 'http://localhost:3001'
+  // Em desenvolvimento, usar proxy do Vite (paths relativos)
+  // Em produção, VITE_API_URL terá o domínio completo
+  const apiBaseUrl = ''
   return `${apiBaseUrl}${url}`
 }
 
@@ -107,7 +109,12 @@ export default function MapLegend({ iconesData, onIconClick, selectedIconUrl, un
 
         {/* Conteúdo expansível */}
         {isExpanded && (
-          <div style={{ padding: '12px 16px' }}>
+          <div style={{ 
+            padding: '12px 16px',
+            maxHeight: 'calc(100vh - 120px)', // Altura máxima considerando header e margens
+            overflowY: 'auto', // Barra de rolagem vertical
+            overflowX: 'hidden',
+          }}>
             <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
               {iconesEmUso.map(icone => {
                 const isSelected = selectedIconUrl === icone.url

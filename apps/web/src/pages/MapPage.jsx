@@ -371,8 +371,8 @@ export default function MapPage() {
           esp => esp.nome?.toLowerCase().includes(textLower)
         )
 
-        // Buscar por "sala de vacina"
-        const salaVacinaMatch = (textLower.includes('vacina') || textLower.includes('sala')) && unidade.sala_vacina
+        // Buscar por "sala de vacina" - aceita apenas "v" ou "V"
+        const salaVacinaMatch = (textLower.includes('v') || textLower.includes('vacina') || textLower.includes('sala')) && unidade.sala_vacina
 
         return nomeMatch || bairroMatch || especialidadeMatch || salaVacinaMatch
       })
@@ -414,7 +414,7 @@ export default function MapPage() {
       if (unidade.especialidades?.some(esp => esp.nome?.toLowerCase().includes(textLower))) {
         byEspecialidade++
       }
-      if ((textLower.includes('vacina') || textLower.includes('sala')) && unidade.sala_vacina) {
+      if ((textLower.includes('v') || textLower.includes('vacina') || textLower.includes('sala')) && unidade.sala_vacina) {
         bySalaVacina++
       }
     })
@@ -487,6 +487,8 @@ export default function MapPage() {
     })
   }
 
+  // Em desenvolvimento, usar o proxy do Vite (localhost:8005)
+  // Em produção, a variável VITE_API_URL terá o domínio correto
   const apiBaseUrl = ''
 
   // Sidebar responsivo
