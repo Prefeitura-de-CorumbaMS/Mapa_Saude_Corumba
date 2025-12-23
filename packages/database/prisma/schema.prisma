@@ -77,6 +77,7 @@ model PROD_Unidade_Saude {
   especialidades      Junction_Unidade_Especialidade[]
   medicos             Junction_Unidade_Medico[]
   redes_sociais       PROD_Unidade_RedeSocial[]
+  servicos            PROD_Unidade_Servico[]
 
   @@index([ativo])
   @@index([latitude, longitude])
@@ -134,6 +135,23 @@ model PROD_Unidade_RedeSocial {
 
   @@index([id_unidade])
   @@map("prod_unidade_redesocial")
+}
+
+model PROD_Unidade_Servico {
+  id          Int                 @id @default(autoincrement())
+  id_unidade  Int
+  descricao   String              @db.VarChar(500)
+  ordem       Int                 @default(0)
+  ativo       Boolean             @default(true)
+  created_at  DateTime            @default(now())
+  updated_at  DateTime            @updatedAt
+
+  unidade     PROD_Unidade_Saude  @relation(fields: [id_unidade], references: [id], onDelete: Cascade)
+
+  @@index([id_unidade])
+  @@index([ordem])
+  @@index([ativo])
+  @@map("prod_unidade_servico")
 }
 
 // ============================================================================

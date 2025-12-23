@@ -17,6 +17,7 @@ const iconeRoutes = require('./routes/icone.routes');
 const auditRoutes = require('./routes/audit.routes');
 const etlRoutes = require('./routes/etl.routes');
 const uploadRoutes = require('./routes/upload.routes');
+const servicoRoutes = require('./routes/servico.routes');
 
 const { errorHandler } = require('./middleware/error.middleware');
 
@@ -98,8 +99,16 @@ app.use(cors({
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 
-// Servir arquivos estáticos da pasta uploads
-app.use('/uploads', express.static(path.join(__dirname, '../../../uploads')));
+// Servir arquivos estáticos da pasta uploads (sem cache para evitar problemas com atualizações)
+app.use('/uploads', express.static(path.join(__dirname, '../../../uploads'), {
+  maxAge: 0,
+  etag: false,
+  setHeaders: (res) => {
+    res.set('Cache-Control', 'no-cache, no-store, must-revalidate');
+    res.set('Pragma', 'no-cache');
+    res.set('Expires', '0');
+  }
+}));
 
 // Request logging
 app.use(requestLogger);
@@ -124,6 +133,7 @@ app.use('/api/medicos', publicLimiter, medicoRoutes); // Rate limit público par
 app.use('/api/especialidades', publicLimiter, especialidadeRoutes); // Rate limit público
 app.use('/api/bairros', bairroRoutes);
 app.use('/api/icones', iconeRoutes);
+app.use('/api/servicos', publicLimiter, servicoRoutes); // Rate limit público para serviços
 app.use('/api/audit', auditRoutes);
 app.use('/api/etl', etlRoutes);
 app.use('/api/upload', uploadRoutes);
