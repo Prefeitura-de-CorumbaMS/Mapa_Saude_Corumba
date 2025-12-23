@@ -279,8 +279,8 @@ export default function MapPage() {
   }, []) // Executa apenas uma vez ao montar
 
   const { data, isLoading, isError, error } = useGetUnidadesQuery(undefined, {
-    refetchOnMountOrArgChange: 300, // Refetch apenas se dados tiverem mais de 5 minutos
-    refetchOnFocus: false, // Não refetch ao voltar para a aba
+    refetchOnMountOrArgChange: 60, // Refetch se dados tiverem mais de 1 minuto
+    refetchOnFocus: true, // Refetch ao voltar para a aba (útil após atualizar ícones no admin)
   })
   const { data: medicosData, isLoading: medicosLoading } = useGetUnidadeMedicosQuery(
     selectedUnidade?.id,
@@ -1391,8 +1391,11 @@ export default function MapPage() {
               let customIcon = null;
               if (unidade.icone_url && unidade.icone_url.trim() !== '') {
                 try {
+                  // Adicionar timestamp baseado na última atualização para evitar cache do navegador
+                  const cacheBuster = lastUpdate ? new Date(lastUpdate).getTime() : Date.now();
+                  const iconUrlWithCacheBuster = `${unidade.icone_url}${unidade.icone_url.includes('?') ? '&' : '?'}v=${cacheBuster}`;
                   customIcon = L.icon({
-                    iconUrl: unidade.icone_url,
+                    iconUrl: iconUrlWithCacheBuster,
                     iconSize: [32, 48],
                     iconAnchor: [16, 48],
                     popupAnchor: [0, -48],

@@ -1,4 +1,4 @@
-import { useState, useEffect, useMemo } from 'react'
+import { useState, useEffect, useMemo, useRef } from 'react'
 import { Card } from 'antd'
 import { PictureOutlined, DownOutlined, UpOutlined } from '@ant-design/icons'
 
@@ -33,6 +33,30 @@ const useIsMobile = () => {
 export default function MapLegend({ iconesData, onIconClick, selectedIconUrl, unidades }) {
   const isMobile = useIsMobile()
   const [isExpanded, setIsExpanded] = useState(false)
+  const legendRef = useRef(null)
+
+  // Detectar cliques fora da legenda para recolhê-la
+  useEffect(() => {
+    if (!isMobile || !isExpanded) return
+
+    const handleClickOutside = (event) => {
+      if (legendRef.current && !legendRef.current.contains(event.target)) {
+        setIsExpanded(false)
+      }
+    }
+
+    // Adicionar listener após um pequeno delay para evitar fechar imediatamente ao abrir
+    const timeoutId = setTimeout(() => {
+      document.addEventListener('mousedown', handleClickOutside)
+      document.addEventListener('touchstart', handleClickOutside)
+    }, 100)
+
+    return () => {
+      clearTimeout(timeoutId)
+      document.removeEventListener('mousedown', handleClickOutside)
+      document.removeEventListener('touchstart', handleClickOutside)
+    }
+  }, [isMobile, isExpanded])
 
   const handleIconClick = (iconeUrl) => {
     if (onIconClick) {
@@ -69,6 +93,7 @@ export default function MapLegend({ iconesData, onIconClick, selectedIconUrl, un
   if (isMobile) {
     return (
       <div
+        ref={legendRef}
         style={{
           position: 'absolute',
           top: '10px',

@@ -36,13 +36,17 @@ router.get('/', asyncHandler(async (req, res) => {
           },
         },
         redes_sociais: true,
+        servicos: {
+          where: { ativo: true },
+          orderBy: { ordem: 'asc' },
+        },
       },
       orderBy: { nome: 'asc' },
     }),
     prisma.pROD_Unidade_Saude.count({ where }),
   ]);
 
-  // Transformar dados para incluir especialidades e redes sociais diretamente
+  // Transformar dados para incluir especialidades, redes sociais e serviços diretamente
   const unidadesFormatted = unidades.map(u => ({
     ...u,
     // Filtrar apenas especialidades ativas E visíveis para o usuário
@@ -50,6 +54,7 @@ router.get('/', asyncHandler(async (req, res) => {
       .map(e => e.especialidade)
       .filter(e => e.ativo && e.visivel_para_usuario),
     redes_sociais: u.redes_sociais,
+    servicos: u.servicos,
   }));
 
   res.json({
