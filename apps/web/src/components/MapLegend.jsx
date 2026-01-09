@@ -1,4 +1,4 @@
-import { useState, useEffect, useMemo } from 'react'
+import { useState, useEffect, useMemo, useRef } from 'react'
 import { Card } from 'antd'
 import { PictureOutlined, DownOutlined, UpOutlined } from '@ant-design/icons'
 
@@ -7,10 +7,10 @@ const getFullImageUrl = (url) => {
   if (!url) return ''
   // Se já é URL completa, retorna como está
   if (url.startsWith('http')) return url
-  // Se começa com /, é URL relativa - retorna como está
-  if (url.startsWith('/')) return url
-  // Caso contrário, adiciona / no início
-  return `/${url}`
+  // Em desenvolvimento, usar proxy do Vite (paths relativos)
+  // Em produção, VITE_API_URL terá o domínio completo
+  const apiBaseUrl = ''
+  return `${apiBaseUrl}${url}`
 }
 
 // Hook para detectar se é mobile
@@ -34,6 +34,30 @@ const useIsMobile = () => {
 export default function MapLegend({ iconesData, onIconClick, selectedIconUrl, unidades }) {
   const isMobile = useIsMobile()
   const [isExpanded, setIsExpanded] = useState(false)
+  const legendRef = useRef(null)
+
+  // Detectar cliques fora da legenda para recolhê-la
+  useEffect(() => {
+    if (!isMobile || !isExpanded) return
+
+    const handleClickOutside = (event) => {
+      if (legendRef.current && !legendRef.current.contains(event.target)) {
+        setIsExpanded(false)
+      }
+    }
+
+    // Adicionar listener após um pequeno delay para evitar fechar imediatamente ao abrir
+    const timeoutId = setTimeout(() => {
+      document.addEventListener('mousedown', handleClickOutside)
+      document.addEventListener('touchstart', handleClickOutside)
+    }, 100)
+
+    return () => {
+      clearTimeout(timeoutId)
+      document.removeEventListener('mousedown', handleClickOutside)
+      document.removeEventListener('touchstart', handleClickOutside)
+    }
+  }, [isMobile, isExpanded])
 
   const handleIconClick = (iconeUrl) => {
     if (onIconClick) {
@@ -70,6 +94,7 @@ export default function MapLegend({ iconesData, onIconClick, selectedIconUrl, un
   if (isMobile) {
     return (
       <div
+        ref={legendRef}
         style={{
           position: 'absolute',
           top: '10px',
@@ -110,7 +135,12 @@ export default function MapLegend({ iconesData, onIconClick, selectedIconUrl, un
 
         {/* Conteúdo expansível */}
         {isExpanded && (
-          <div style={{ padding: '12px 16px' }}>
+          <div style={{ 
+            padding: '12px 16px',
+            maxHeight: 'calc(100vh - 120px)', // Altura máxima considerando header e margens
+            overflowY: 'auto', // Barra de rolagem vertical
+            overflowX: 'hidden',
+          }}>
             <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
               {iconesEmUso.map(icone => {
                 const isSelected = selectedIconUrl === icone.url

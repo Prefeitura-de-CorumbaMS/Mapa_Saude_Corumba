@@ -21,12 +21,19 @@ import { CSS } from '@dnd-kit/utilities'
 
 const { Title, Text } = Typography
 
-// Helper para obter URL completa
+// Helper para obter URL da imagem (usa proxy do Vite em dev, URL direta em produção)
 const getFullImageUrl = (url) => {
   if (!url) return ''
   if (url.startsWith('http')) return url
-  const apiBaseUrl = import.meta.env.VITE_API_URL?.replace('/api', '') || 'http://localhost:3001'
-  return `${apiBaseUrl}${url}`
+
+  // Em desenvolvimento, usar URL relativa para aproveitar o proxy do Vite
+  // Em produção, construir URL completa
+  if (import.meta.env.DEV) {
+    return url // URL relativa, será proxied pelo Vite
+  } else {
+    const apiBaseUrl = import.meta.env.VITE_API_URL?.replace('/api', '') || ''
+    return `${apiBaseUrl}${url}`
+  }
 }
 
 // Componente de linha arrastável

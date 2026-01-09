@@ -12,14 +12,14 @@ export default defineConfig({
   },
   server: {
     host: '0.0.0.0', // Permite acesso de qualquer IP na rede
-    port: 5173,
+    port: 8005,
     proxy: {
       '/api': {
-        target: 'http://localhost:3001',
+        target: 'http://localhost:8006',
         changeOrigin: true,
       },
       '/uploads': {
-        target: 'http://localhost:3001',
+        target: 'http://localhost:8006',
         changeOrigin: true,
       },
     },

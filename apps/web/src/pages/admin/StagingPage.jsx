@@ -131,9 +131,8 @@ export default function StagingPage() {
     }
 
     if (record.imagem_url) {
-      const apiUrl = import.meta.env.VITE_API_URL || 'http://localhost:3001/api'
-      const baseUrl = apiUrl.replace('/api', '')
-      setImageUrl(baseUrl + record.imagem_url)
+      // Usar path relativo para aproveitar proxy do Vite
+      setImageUrl(record.imagem_url)
       // Extrair filename do URL
       const filename = record.imagem_url.split('/').pop()
       setImageFilename(filename)
@@ -178,9 +177,8 @@ export default function StagingPage() {
       const result = await uploadImage(formData).unwrap()
       setImageFilename(result.data.filename)
 
-      const apiUrl = import.meta.env.VITE_API_URL || 'http://localhost:3001/api'
-      const baseUrl = apiUrl.replace('/api', '')
-      setImageUrl(baseUrl + result.data.url)
+      // Usar path relativo para aproveitar proxy do Vite
+      setImageUrl(result.data.url)
 
       message.success('Imagem enviada com sucesso!')
     } catch (error) {
@@ -228,7 +226,7 @@ export default function StagingPage() {
       // Incluir URL da imagem e ícone se houver
       const dataToSave = {
         ...values,
-        imagem_url: imageUrl ? imageUrl.replace(import.meta.env.VITE_API_URL?.replace('/api', '') || 'http://localhost:3001', '') : null,
+        imagem_url: imageUrl || null,
         icone_url: selectedIcon || null,
       }
 

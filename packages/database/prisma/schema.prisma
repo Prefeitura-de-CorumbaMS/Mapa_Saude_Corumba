@@ -149,8 +149,8 @@ model PROD_Unidade_Servico {
   unidade     PROD_Unidade_Saude  @relation(fields: [id_unidade], references: [id], onDelete: Cascade)
 
   @@index([id_unidade])
-  @@index([ordem])
   @@index([ativo])
+  @@index([ordem])
   @@map("prod_unidade_servico")
 }
 
