@@ -5,7 +5,7 @@ WWW_DIR="/var/www"
 MAPASAUDE_DIR="${WWW_DIR}/mapasaude"
 
 # Caminho fixo e absoluto do build
-SOURCE_DIR="/home/elizael/Mapa_Saude_Corumba/apps/web/dist"
+SOURCE_DIR="/dados/www/mapa_saude/apps/web/dist"
 
 echo "Iniciando deploy do Front-end do Mapa da Saúde..."
 echo "---------------------------------------------------------"

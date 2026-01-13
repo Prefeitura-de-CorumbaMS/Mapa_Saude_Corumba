@@ -2,7 +2,7 @@ module.exports = {
   apps: [
     {
       name: 'mapasaude-api',
-      cwd: '/home/elizael/Mapa_Saude_Corumba',
+      cwd: '/dados/www/mapa_saude',
       script: 'apps/api/src/index.js',
       instances: 1,
       exec_mode: 'fork',
