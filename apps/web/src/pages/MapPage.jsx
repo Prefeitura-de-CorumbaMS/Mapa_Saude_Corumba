@@ -23,6 +23,7 @@ import { useGetUnidadesQuery, useGetUnidadeMedicosQuery, useGetLastUpdateQuery, 
 import MapLegend from '../components/MapLegend'
 import 'leaflet/dist/leaflet.css'
 import { trackBusca, trackVisualizacaoUnidade, trackCliqueMapaUnidade, trackContatoUnidade, trackRedeSocialUnidade, trackFiltroMapa } from '../utils/analytics'
+import { normalizeText } from '../utils/textUtils'
 
 // Custom Marker component to handle zoom on click and hover effects
 const CustomMarker = ({ unidade, onClick, customIcon, isSelected }) => {
@@ -357,22 +358,22 @@ export default function MapPage() {
 
     // Se tem busca por texto, usar ela (prioritária)
     if (searchText.trim()) {
-      const textLower = searchText.toLowerCase().trim()
+      const searchNormalized = normalizeText(searchText)
 
       filtered = filtered.filter(unidade => {
         // Buscar no nome da unidade
-        const nomeMatch = unidade.nome?.toLowerCase().includes(textLower)
+        const nomeMatch = normalizeText(unidade.nome).includes(searchNormalized)
 
         // Buscar no bairro
-        const bairroMatch = unidade.bairro?.toLowerCase().includes(textLower)
+        const bairroMatch = normalizeText(unidade.bairro).includes(searchNormalized)
 
         // Buscar nas especialidades
         const especialidadeMatch = unidade.especialidades?.some(
-          esp => esp.nome?.toLowerCase().includes(textLower)
+          esp => normalizeText(esp.nome).includes(searchNormalized)
         )
 
         // Buscar por "sala de vacina" - aceita apenas "v" ou "V"
-        const salaVacinaMatch = (textLower.includes('v') || textLower.includes('vacina') || textLower.includes('sala')) && unidade.sala_vacina
+        const salaVacinaMatch = (searchNormalized.includes('v') || searchNormalized.includes('vacina') || searchNormalized.includes('sala')) && unidade.sala_vacina
 
         return nomeMatch || bairroMatch || especialidadeMatch || salaVacinaMatch
       })
@@ -402,19 +403,19 @@ export default function MapPage() {
   const searchStats = useMemo(() => {
     if (!searchText.trim()) return null
 
-    const textLower = searchText.toLowerCase().trim()
+    const searchNormalized = normalizeText(searchText)
     let byName = 0
     let byBairro = 0
     let byEspecialidade = 0
     let bySalaVacina = 0
 
     filteredUnidades.forEach(unidade => {
-      if (unidade.nome?.toLowerCase().includes(textLower)) byName++
-      if (unidade.bairro?.toLowerCase().includes(textLower)) byBairro++
-      if (unidade.especialidades?.some(esp => esp.nome?.toLowerCase().includes(textLower))) {
+      if (normalizeText(unidade.nome).includes(searchNormalized)) byName++
+      if (normalizeText(unidade.bairro).includes(searchNormalized)) byBairro++
+      if (unidade.especialidades?.some(esp => normalizeText(esp.nome).includes(searchNormalized))) {
         byEspecialidade++
       }
-      if ((textLower.includes('v') || textLower.includes('vacina') || textLower.includes('sala')) && unidade.sala_vacina) {
+      if ((searchNormalized.includes('v') || searchNormalized.includes('vacina') || searchNormalized.includes('sala')) && unidade.sala_vacina) {
         bySalaVacina++
       }
     })
@@ -524,7 +525,7 @@ export default function MapPage() {
             top: 0,
             bottom: 0,
             width: `${sidebarWidth}px`,
-            maxHeight: isMobile ? '85vh' : '100%',
+            height: '100%',
             backgroundColor: 'white',
             boxShadow: isMobile ? '2px 0 12px rgba(0,0,0,0.2)' : '2px 0 8px rgba(0,0,0,0.15)',
             borderRadius: isMobile ? '0 12px 12px 0' : '0',
@@ -1342,10 +1343,9 @@ export default function MapPage() {
         )}
 
         {/* Mapa */}
-        <div style={{ 
-          flex: 1, 
-          height: '100%', 
-          minHeight: '500px', // Altura mínima para evitar CLS
+        <div style={{
+          flex: 1,
+          height: '100%',
           position: 'relative',
           backgroundColor: '#e5e3df' // Cor de fundo similar aos tiles para reduzir flash
         }}>

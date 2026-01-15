@@ -24,6 +24,7 @@ import {
   PlusOutlined,
 } from '@ant-design/icons';
 import { useGetEspecialidadesBrutasQuery, useGetMapeamentosQuery, useGetEstatisticasNormalizacaoQuery, useCreateMapeamentoMutation, useUpdateMapeamentoMutation, useDeleteMapeamentoMutation } from '../../store/slices/apiSlice';
+import { normalizeText } from '../../utils/textUtils';
 
 const { Title, Text } = Typography;
 
@@ -55,12 +56,12 @@ export default function EspecialidadesNormalizacaoPage() {
 
   // Aplicar filtro de busca
   const brutasFiltered = brutasNaoMapeadas.filter(
-    bruta => bruta.nome.toLowerCase().includes(searchBruta.toLowerCase())
+    bruta => normalizeText(bruta.nome).includes(normalizeText(searchBruta))
   );
 
   const mapeamentosFiltered = mapeamentos.filter(
-    m => m.especialidade_bruta.toLowerCase().includes(searchMapeamento.toLowerCase()) ||
-         m.especialidade_normalizada.toLowerCase().includes(searchMapeamento.toLowerCase())
+    m => normalizeText(m.especialidade_bruta).includes(normalizeText(searchMapeamento)) ||
+         normalizeText(m.especialidade_normalizada).includes(normalizeText(searchMapeamento))
   );
 
   const handleCreate = (especialidadeBruta) => {

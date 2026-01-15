@@ -14,6 +14,7 @@ import {
   useUpdateMedicoMutation,
   useDeleteMedicoMutation,
 } from '../../store/slices/apiSlice'
+import { normalizeText } from '../../utils/textUtils'
 
 const { Title, Text } = Typography
 
@@ -36,7 +37,7 @@ export default function MedicosPage() {
 
   // Filter by search text
   const medicosFiltered = medicos.filter(medico =>
-    medico.nome.toLowerCase().includes(searchText.toLowerCase())
+    normalizeText(medico.nome).includes(normalizeText(searchText))
   )
 
   // Calculate statistics
