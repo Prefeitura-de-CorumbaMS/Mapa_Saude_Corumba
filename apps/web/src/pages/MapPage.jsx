@@ -899,7 +899,7 @@ export default function MapPage() {
                           fontWeight: 'bold',
                         }}
                       >
-                        Ver Médicos que Atendem
+                        Ver Profissionais que Atendem
                         <Badge
                           count={medicos.length}
                           style={{
@@ -1453,7 +1453,7 @@ export default function MapPage() {
           title={
             <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
               <UserOutlined style={{ color: '#1890ff', fontSize: '20px' }} />
-              <span>Médicos que Atendem</span>
+              <span>Profissionais que Atendem</span>
             </div>
           }
           open={medicosModalVisible}
