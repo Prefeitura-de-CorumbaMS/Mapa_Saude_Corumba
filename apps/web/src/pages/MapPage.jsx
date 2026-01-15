@@ -895,7 +895,7 @@ export default function MapPage() {
                         block
                         style={{
                           height: '48px',
-                          fontSize: '16px',
+                          fontSize: isMobile ? '13px' : '16px',
                           fontWeight: 'bold',
                         }}
                       >
