@@ -31,7 +31,7 @@ const useIsMobile = () => {
   return isMobile
 }
 
-export default function MapLegend({ iconesData, onIconClick, selectedIconUrl, unidades }) {
+export default function MapLegend({ iconesData, onIconClick, selectedIconUrl, unidades, onExpand }) {
   const isMobile = useIsMobile()
   const [isExpanded, setIsExpanded] = useState(false)
   const legendRef = useRef(null)
@@ -110,7 +110,11 @@ export default function MapLegend({ iconesData, onIconClick, selectedIconUrl, un
       >
         {/* Header sempre visível */}
         <div
-          onClick={() => setIsExpanded(!isExpanded)}
+          onClick={() => {
+            const next = !isExpanded
+            setIsExpanded(next)
+            if (next && onExpand) onExpand()
+          }}
           style={{
             display: 'flex',
             alignItems: 'center',

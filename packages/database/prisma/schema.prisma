@@ -342,3 +342,20 @@ model PROD_Icone {
   @@index([ordem])
   @@map("prod_icone")
 }
+
+// ============================================================================
+// ANALYTICS - Eventos de uso do mapa público
+// ============================================================================
+
+model ANALYTICS_Event {
+  id         Int      @id @default(autoincrement())
+  tipo       String   @db.VarChar(100)  // page_view | busca_realizada | legenda_aberta | visualizacao_unidade | filtro_aplicado | clique_mapa | contato_unidade | rede_social
+  dados      String?  @db.Text          // JSON: { termo, tipo_busca, unidade_id, unidade_nome, ... }
+  ip_hash    String?  @db.VarChar(64)   // SHA-256(ip + salt) — nunca o IP bruto
+  created_at DateTime @default(now())
+
+  @@index([tipo])
+  @@index([created_at])
+  @@index([tipo, created_at])
+  @@map("analytics_event")
+}

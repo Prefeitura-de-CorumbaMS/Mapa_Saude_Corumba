@@ -22,7 +22,7 @@ import L from 'leaflet'
 import { useGetUnidadesQuery, useGetUnidadeMedicosQuery, useGetLastUpdateQuery, useGetIconesQuery } from '../store/slices/apiSlice'
 import MapLegend from '../components/MapLegend'
 import 'leaflet/dist/leaflet.css'
-import { trackBusca, trackVisualizacaoUnidade, trackCliqueMapaUnidade, trackContatoUnidade, trackRedeSocialUnidade, trackFiltroMapa } from '../utils/analytics'
+import { trackBusca, trackVisualizacaoUnidade, trackCliqueMapaUnidade, trackContatoUnidade, trackRedeSocialUnidade, trackFiltroMapa, trackPageView, trackLegendaAberta } from '../utils/analytics'
 import { normalizeText } from '../utils/textUtils'
 
 // Custom Marker component to handle zoom on click and hover effects
@@ -259,6 +259,11 @@ export default function MapPage() {
   const [searchValue, setSearchValue] = useState(null)
   const [searchText, setSearchText] = useState('') // Busca unificada por texto
   const [selectedIconUrl, setSelectedIconUrl] = useState(null) // Filtro por ícone da legenda
+
+  // Registrar page_view ao montar o componente
+  useEffect(() => {
+    trackPageView()
+  }, [])
 
   // Detectar mobile
   useEffect(() => {
@@ -1416,6 +1421,7 @@ export default function MapPage() {
             iconesData={iconesData}
             selectedIconUrl={selectedIconUrl}
             unidades={filteredUnidades}
+            onExpand={trackLegendaAberta}
             onIconClick={(iconUrl) => {
               // Toggle: se clicar no mesmo ícone, desseleciona
               const isDeselecting = selectedIconUrl === iconUrl

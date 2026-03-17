@@ -30,7 +30,7 @@ const baseQueryWithReauth = async (args, api, extraOptions) => {
 export const apiSlice = createApi({
   reducerPath: 'api',
   baseQuery: baseQueryWithReauth,
-  tagTypes: ['Unidades', 'Medicos', 'Especialidades', 'Staging', 'Users', 'Audit', 'Bairros', 'Icones'],
+  tagTypes: ['Unidades', 'Medicos', 'Especialidades', 'Staging', 'Users', 'Audit', 'Bairros', 'Icones', 'Analytics'],
   keepUnusedDataFor: 300, // Cache por 5 minutos (300 segundos)
   endpoints: (builder) => ({
     // Auth
@@ -354,6 +354,12 @@ export const apiSlice = createApi({
       }),
       invalidatesTags: ['Icones'],
     }),
+
+    // Analytics
+    getAnalyticsStats: builder.query({
+      query: () => '/analytics/stats',
+      providesTags: ['Analytics'],
+    }),
   }),
 })
 
@@ -398,4 +404,5 @@ export const {
   useUpdateIconeMutation,
   useDeleteIconeMutation,
   useReordenarIconesMutation,
+  useGetAnalyticsStatsQuery,
 } = apiSlice

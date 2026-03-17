@@ -15,6 +15,7 @@ const especialidadeRoutes = require('./routes/especialidade.routes');
 const bairroRoutes = require('./routes/bairro.routes');
 const iconeRoutes = require('./routes/icone.routes');
 const auditRoutes = require('./routes/audit.routes');
+const analyticsRoutes = require('./routes/analytics.routes');
 const uploadRoutes = require('./routes/upload.routes');
 const servicoRoutes = require('./routes/servico.routes');
 
@@ -138,6 +139,7 @@ app.use('/api/bairros', bairroRoutes);
 app.use('/api/icones', iconeRoutes);
 app.use('/api/servicos', publicLimiter, servicoRoutes); // Rate limit público para serviços
 app.use('/api/audit', auditRoutes);
+app.use('/api/analytics', rateLimit({ windowMs: 15 * 60 * 1000, max: 50, standardHeaders: true, legacyHeaders: false, skip: (req) => req.method !== 'POST' }), analyticsRoutes);
 app.use('/api/upload', uploadRoutes);
 
 // 404 handler
