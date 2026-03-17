@@ -30,7 +30,7 @@ const baseQueryWithReauth = async (args, api, extraOptions) => {
 export const apiSlice = createApi({
   reducerPath: 'api',
   baseQuery: baseQueryWithReauth,
-  tagTypes: ['Unidades', 'Medicos', 'Especialidades', 'Staging', 'Users', 'Audit', 'ETL', 'Mapeamentos', 'Bairros', 'Icones'],
+  tagTypes: ['Unidades', 'Medicos', 'Especialidades', 'Staging', 'Users', 'Audit', 'Bairros', 'Icones'],
   keepUnusedDataFor: 300, // Cache por 5 minutos (300 segundos)
   endpoints: (builder) => ({
     // Auth
@@ -272,62 +272,6 @@ export const apiSlice = createApi({
       providesTags: ['Audit'],
     }),
 
-    // ETL (Superadmin only)
-    getETLExecutions: builder.query({
-      query: (params) => ({
-        url: '/etl/executions',
-        params,
-      }),
-      providesTags: ['ETL'],
-    }),
-
-    getETLStats: builder.query({
-      query: () => '/etl/last-execution',
-      providesTags: ['ETL'],
-    }),
-
-    // Normalização de Especialidades
-    getEspecialidadesBrutas: builder.query({
-      query: () => '/especialidades/brutas/list',
-      providesTags: ['Especialidades'],
-    }),
-
-    getMapeamentos: builder.query({
-      query: () => '/especialidades/mapeamentos/list',
-      providesTags: ['Mapeamentos'],
-    }),
-
-    getEstatisticasNormalizacao: builder.query({
-      query: () => '/especialidades/estatisticas/normalizacao',
-      providesTags: ['Mapeamentos'],
-    }),
-
-    createMapeamento: builder.mutation({
-      query: (data) => ({
-        url: '/especialidades/mapear',
-        method: 'POST',
-        body: data,
-      }),
-      invalidatesTags: ['Mapeamentos', 'Especialidades'],
-    }),
-
-    updateMapeamento: builder.mutation({
-      query: ({ id, body }) => ({
-        url: `/especialidades/mapear/${id}`,
-        method: 'PUT',
-        body,
-      }),
-      invalidatesTags: ['Mapeamentos'],
-    }),
-
-    deleteMapeamento: builder.mutation({
-      query: (id) => ({
-        url: `/especialidades/mapear/${id}`,
-        method: 'DELETE',
-      }),
-      invalidatesTags: ['Mapeamentos', 'Especialidades'],
-    }),
-
     // Upload de imagem
     uploadUnidadeImagem: builder.mutation({
       query: (formData) => ({
@@ -443,15 +387,7 @@ export const {
   useDeleteUserMutation,
   useGetAuditLogsQuery,
   useGetAuditStatsQuery,
-  useGetETLExecutionsQuery,
-  useGetETLStatsQuery,
   useGetLastUpdateQuery,
-  useGetEspecialidadesBrutasQuery,
-  useGetMapeamentosQuery,
-  useGetEstatisticasNormalizacaoQuery,
-  useCreateMapeamentoMutation,
-  useUpdateMapeamentoMutation,
-  useDeleteMapeamentoMutation,
   useUploadUnidadeImagemMutation,
   useDeleteUnidadeImagemMutation,
   useUploadIconeMutation,
