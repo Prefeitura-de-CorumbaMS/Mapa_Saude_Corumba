@@ -62,7 +62,7 @@ sudo bash scripts/deploy-frontend.sh
 
 ```bash
 # 1. Copiar configuração
-sudo cp nginx.conf /etc/nginx/sites-available/mapasaude
+sudo cp deploy/nginx/nginx.conf /etc/nginx/sites-available/mapasaude
 
 # 2. Criar link simbólico
 sudo ln -s /etc/nginx/sites-available/mapasaude /etc/nginx/sites-enabled/
@@ -77,8 +77,9 @@ sudo systemctl reload nginx
 ## Passo 4: Configurar API com PM2
 
 ```bash
-# 1. Criar arquivo de configuração do PM2
-cat > ecosystem.config.js << 'EOF'
+# 1. Usar o arquivo de configuração do PM2 já existente em deploy/
+# (ou criar manualmente com o conteúdo abaixo)
+cat > deploy/ecosystem.config.js << 'EOF'
 module.exports = {
   apps: [
     {
@@ -99,7 +100,7 @@ module.exports = {
 EOF
 
 # 2. Iniciar API com PM2
-pm2 start ecosystem.config.js
+pm2 start deploy/ecosystem.config.js
 
 # 3. Salvar configuração do PM2
 pm2 save

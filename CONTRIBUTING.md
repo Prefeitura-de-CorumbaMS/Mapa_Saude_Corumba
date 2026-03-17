@@ -120,7 +120,7 @@ Outras soluções que você considerou?
 
 - Atualize README.md se necessário
 - Documente APIs com comentários JSDoc
-- Mantenha ARCHITECTURE.md atualizado
+- Mantenha docs/ARCHITECTURE.md atualizado
 - Adicione exemplos de uso quando relevante
 
 ## 🔐 Segurança
