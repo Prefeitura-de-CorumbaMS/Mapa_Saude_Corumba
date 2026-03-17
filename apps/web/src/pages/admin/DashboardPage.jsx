@@ -46,7 +46,7 @@ function getGreeting() {
 const OPERACAO_MAP = { INSERT: ['Criado', 'green'], UPDATE: ['Atualizado', 'blue'], DELETE: ['Excluído', 'red'] }
 const TABELA_MAP = {
   PROD_Unidade_Saude: 'Unidade',
-  PROD_Medico: 'Médico',
+  PROD_Medico: 'Profissional de Saúde',
   PROD_Especialidade: 'Especialidade',
   PROD_Bairro: 'Bairro',
   PROD_Icone: 'Ícone',
@@ -81,12 +81,12 @@ export default function DashboardPage() {
       link: '/admin/unidades',
     },
     {
-      title: 'Médicos',
+      title: 'Profissionais',
       value: medicosData?.pagination?.total ?? 0,
       icon: <MedicineBoxOutlined />,
       color: '#52c41a',
       loading: lMedicos,
-      link: '/admin/medicos',
+      link: '/admin/profissionais',
     },
     {
       title: 'Especialidades',

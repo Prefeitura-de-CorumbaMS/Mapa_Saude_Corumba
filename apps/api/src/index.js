@@ -133,7 +133,7 @@ app.use('/api/auth', authRoutes);
 app.use('/api/users', userRoutes);
 app.use('/api/staging', stagingRoutes);
 app.use('/api/unidades', publicLimiter, unidadeRoutes); // Rate limit público para mapa
-app.use('/api/medicos', publicLimiter, medicoRoutes); // Rate limit público para mapa
+app.use('/api/profissionais', publicLimiter, medicoRoutes); // Rate limit público para mapa
 app.use('/api/especialidades', publicLimiter, especialidadeRoutes); // Rate limit público
 app.use('/api/bairros', bairroRoutes);
 app.use('/api/icones', iconeRoutes);

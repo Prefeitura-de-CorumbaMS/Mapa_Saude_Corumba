@@ -30,7 +30,7 @@ const baseQueryWithReauth = async (args, api, extraOptions) => {
 export const apiSlice = createApi({
   reducerPath: 'api',
   baseQuery: baseQueryWithReauth,
-  tagTypes: ['Unidades', 'Medicos', 'Especialidades', 'Staging', 'Users', 'Audit', 'Bairros', 'Icones', 'Analytics'],
+  tagTypes: ['Unidades', 'Profissionais', 'Especialidades', 'Staging', 'Users', 'Audit', 'Bairros', 'Icones', 'Analytics'],
   keepUnusedDataFor: 300, // Cache por 5 minutos (300 segundos)
   endpoints: (builder) => ({
     // Auth
@@ -52,7 +52,7 @@ export const apiSlice = createApi({
     }),
 
     getUnidadeMedicos: builder.query({
-      query: (id) => `/unidades/${id}/medicos`,
+      query: (id) => `/unidades/${id}/profissionais`,
       keepUnusedDataFor: 300, // Cache por 5 minutos
     }),
 
@@ -151,39 +151,39 @@ export const apiSlice = createApi({
       invalidatesTags: ['Unidades'],
     }),
 
-    // Médicos
+    // Profissionais de Saúde
     getMedicos: builder.query({
       query: (params) => ({
-        url: '/medicos',
+        url: '/profissionais',
         params,
       }),
-      providesTags: ['Medicos'],
+      providesTags: ['Profissionais'],
     }),
 
     createMedico: builder.mutation({
       query: (data) => ({
-        url: '/medicos',
+        url: '/profissionais',
         method: 'POST',
         body: data,
       }),
-      invalidatesTags: ['Medicos'],
+      invalidatesTags: ['Profissionais'],
     }),
 
     updateMedico: builder.mutation({
       query: ({ id, ...data }) => ({
-        url: `/medicos/${id}`,
+        url: `/profissionais/${id}`,
         method: 'PUT',
         body: data,
       }),
-      invalidatesTags: ['Medicos'],
+      invalidatesTags: ['Profissionais'],
     }),
 
     deleteMedico: builder.mutation({
       query: (id) => ({
-        url: `/medicos/${id}`,
+        url: `/profissionais/${id}`,
         method: 'DELETE',
       }),
-      invalidatesTags: ['Medicos'],
+      invalidatesTags: ['Profissionais'],
     }),
 
     // Especialidades

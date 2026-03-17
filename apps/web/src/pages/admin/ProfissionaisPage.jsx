@@ -18,14 +18,14 @@ import { normalizeText } from '../../utils/textUtils'
 
 const { Title, Text } = Typography
 
-export default function MedicosPage() {
+export default function ProfissionaisPage() {
   const [page, setPage] = useState(1)
   const [searchText, setSearchText] = useState('')
   const [isModalOpen, setIsModalOpen] = useState(false)
   const [editingMedico, setEditingMedico] = useState(null)
   const [form] = Form.useForm()
 
-  // API hooks - carrega TODOS os médicos (limite 10000 para garantir)
+  // API hooks - carrega TODOS os profissionais (limite 10000 para garantir)
   const { data: medicosData, isLoading: loadingMedicos } = useGetMedicosQuery({ page: 1, limit: 10000 })
   const { data: especialidadesData } = useGetEspecialidadesQuery()
   const [createMedico, { isLoading: creating }] = useCreateMedicoMutation()
@@ -68,9 +68,9 @@ export default function MedicosPage() {
   const handleDelete = async (id) => {
     try {
       await deleteMedico(id).unwrap()
-      message.success('Médico excluído com sucesso!')
+      message.success('Profissional excluído com sucesso!')
     } catch (error) {
-      message.error('Erro ao excluir médico: ' + (error.data?.error || error.message))
+      message.error('Erro ao excluir profissional: ' + (error.data?.error || error.message))
     }
   }
 
@@ -86,19 +86,19 @@ export default function MedicosPage() {
       if (editingMedico) {
         // Update existing doctor
         await updateMedico({ id: editingMedico.id, ...payload }).unwrap()
-        message.success('Médico atualizado com sucesso!')
+        message.success('Profissional atualizado com sucesso!')
       } else {
         // Create new doctor - generate id_origem
         const id_origem = `manual_${Date.now()}_${Math.floor(Math.random() * 1000000)}`
         await createMedico({ ...payload, id_origem }).unwrap()
-        message.success('Médico criado com sucesso!')
+        message.success('Profissional criado com sucesso!')
       }
 
       setIsModalOpen(false)
       form.resetFields()
       setEditingMedico(null)
     } catch (error) {
-      message.error('Erro ao salvar médico: ' + (error.data?.error || error.message))
+      message.error('Erro ao salvar profissional: ' + (error.data?.error || error.message))
     }
   }
 
@@ -196,10 +196,10 @@ export default function MedicosPage() {
     <div>
       <Title level={2}>
         <UserOutlined style={{ marginRight: '12px' }} />
-        Gestão de Médicos
+        Gestão de Profissionais de Saúde
       </Title>
       <Text type="secondary" style={{ display: 'block', marginBottom: '24px' }}>
-        Gerencie os médicos cadastrados no sistema. Você pode criar, editar e excluir médicos, além de atribuir especialidades.
+        Gerencie os profissionais de saúde cadastrados no sistema. Você pode criar, editar e excluir profissionais, além de atribuir especialidades.
       </Text>
 
       {/* Statistics */}
@@ -207,7 +207,7 @@ export default function MedicosPage() {
         <Col span={8}>
           <Card>
             <Statistic
-              title="Total de Médicos"
+              title="Total de Profissionais"
               value={totalMedicos}
               prefix={<UserOutlined />}
               valueStyle={{ color: '#1890ff' }}
@@ -217,7 +217,7 @@ export default function MedicosPage() {
         <Col span={8}>
           <Card>
             <Statistic
-              title="Médicos Ativos"
+              title="Profissionais Ativos"
               value={medicosAtivos}
               prefix={<CheckCircleOutlined />}
               valueStyle={{ color: '#52c41a' }}
@@ -227,7 +227,7 @@ export default function MedicosPage() {
         <Col span={8}>
           <Card>
             <Statistic
-              title="Médicos Inativos"
+              title="Profissionais Inativos"
               value={medicosInativos}
               prefix={<CloseCircleOutlined />}
               valueStyle={{ color: '#8c8c8c' }}
@@ -241,7 +241,7 @@ export default function MedicosPage() {
         <Space direction="vertical" style={{ width: '100%' }} size="large">
           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
             <Input.Search
-              placeholder="Buscar médico por nome..."
+              placeholder="Buscar profissional por nome..."
               value={searchText}
               onChange={(e) => setSearchText(e.target.value)}
               style={{ width: 400 }}
@@ -253,7 +253,7 @@ export default function MedicosPage() {
               onClick={handleCreate}
               size="large"
             >
-              Novo Médico
+              Novo Profissional
             </Button>
           </div>
 
@@ -268,7 +268,7 @@ export default function MedicosPage() {
               total: medicosFiltered.length,
               onChange: setPage,
               showSizeChanger: true,
-              showTotal: (total) => `Total: ${total} médicos`,
+              showTotal: (total) => `Total: ${total} profissionais`,
             }}
           />
         </Space>
@@ -276,7 +276,7 @@ export default function MedicosPage() {
 
       {/* Create/Edit Modal */}
       <Modal
-        title={editingMedico ? 'Editar Médico' : 'Novo Médico'}
+        title={editingMedico ? 'Editar Profissional' : 'Novo Profissional'}
         open={isModalOpen}
         onCancel={handleCancel}
         footer={null}
@@ -289,11 +289,11 @@ export default function MedicosPage() {
           initialValues={{ ativo: true }}
         >
           <Form.Item
-            label="Nome do Médico"
+            label="Nome do Profissional"
             name="nome"
-            rules={[{ required: true, message: 'Por favor, insira o nome do médico' }]}
+            rules={[{ required: true, message: 'Por favor, insira o nome do profissional' }]}
           >
-            <Input placeholder="Digite o nome completo do médico" />
+              <Input placeholder="Digite o nome completo do profissional" />
           </Form.Item>
 
           <Form.Item

@@ -51,7 +51,7 @@ export default function AdminLayout() {
     { key: '/admin/analytics', icon: <BarChartOutlined />, label: 'Analytics' },
     { key: '/admin/staging', icon: <DatabaseOutlined />, label: 'Área de Staging (Arquivo)' },
     { key: '/admin/unidades', icon: <EnvironmentOutlined />, label: 'Unidades' },
-    { key: '/admin/medicos', icon: <MedicineBoxOutlined />, label: 'Médicos' },
+    { key: '/admin/profissionais', icon: <MedicineBoxOutlined />, label: 'Profissionais' },
     { key: '/admin/especialidades', icon: <TeamOutlined />, label: 'Especialidades' },
     { key: '/admin/icones', icon: <PictureOutlined />, label: 'Ícones' },
     { key: '/admin/bairros', icon: <EnvironmentOutlined />, label: 'Bairros' },

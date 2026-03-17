@@ -384,10 +384,10 @@ router.get('/stats/last-update', asyncHandler(async (req, res) => {
 }));
 
 /**
- * GET /api/unidades/:id/medicos
- * Busca médicos que atendem em uma unidade (baseado na relação direta unidade-médico)
+ * GET /api/unidades/:id/profissionais
+ * Busca profissionais que atendem em uma unidade (baseado na relação direta unidade-médico)
  */
-router.get('/:id/medicos', asyncHandler(async (req, res) => {
+router.get('/:id/profissionais', asyncHandler(async (req, res) => {
   const { id } = req.params;
 
   // Buscar médicos que atendem nesta unidade através da junction table

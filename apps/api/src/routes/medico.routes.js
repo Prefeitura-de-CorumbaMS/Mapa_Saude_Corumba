@@ -11,8 +11,8 @@ const router = express.Router();
 // ============================================================================
 
 /**
- * GET /api/medicos
- * Lista todos os médicos
+ * GET /api/profissionais
+ * Lista todos os profissionais de saúde
  */
 router.get('/', asyncHandler(async (req, res) => {
   const { ativo = 'true', page = 1, limit = 100 } = req.query;
@@ -59,7 +59,7 @@ router.get('/', asyncHandler(async (req, res) => {
 }));
 
 /**
- * GET /api/medicos/:id
+ * GET /api/profissionais/:id
  * Busca médico por ID
  */
 router.get('/:id', asyncHandler(async (req, res) => {
@@ -79,7 +79,7 @@ router.get('/:id', asyncHandler(async (req, res) => {
   if (!medico) {
     return res.status(404).json({
       success: false,
-      error: 'Médico not found',
+      error: 'Profissional not found',
     });
   }
   
@@ -93,7 +93,7 @@ router.get('/:id', asyncHandler(async (req, res) => {
 }));
 
 /**
- * POST /api/medicos
+ * POST /api/profissionais
  * Cria novo médico (requer autenticação)
  */
 router.post('/', authenticate, requireAdmin, asyncHandler(async (req, res) => {
@@ -124,7 +124,7 @@ router.post('/', authenticate, requireAdmin, asyncHandler(async (req, res) => {
   
   auditLog('CREATE', 'PROD_Medico', medico.id, req.user.id, req.user.role);
   
-  logger.info('Médico created', {
+  logger.info('Profissional created', {
     user_id: req.user.id,
     medico_id: medico.id,
     nome: medico.nome,
@@ -137,7 +137,7 @@ router.post('/', authenticate, requireAdmin, asyncHandler(async (req, res) => {
 }));
 
 /**
- * PUT /api/medicos/:id
+ * PUT /api/profissionais/:id
  * Atualiza médico (requer autenticação)
  */
 router.put('/:id', authenticate, requireAdmin, asyncHandler(async (req, res) => {
@@ -172,7 +172,7 @@ router.put('/:id', authenticate, requireAdmin, asyncHandler(async (req, res) => 
     updated_fields: Object.keys(updateData),
   });
   
-  logger.info('Médico updated', {
+  logger.info('Profissional updated', {
     user_id: req.user.id,
     medico_id: parseInt(id),
     updated_fields: Object.keys(updateData),
@@ -185,7 +185,7 @@ router.put('/:id', authenticate, requireAdmin, asyncHandler(async (req, res) => 
 }));
 
 /**
- * DELETE /api/medicos/:id
+ * DELETE /api/profissionais/:id
  * Deleta médico (requer autenticação)
  */
 router.delete('/:id', authenticate, requireAdmin, asyncHandler(async (req, res) => {
@@ -197,7 +197,7 @@ router.delete('/:id', authenticate, requireAdmin, asyncHandler(async (req, res) 
   
   auditLog('DELETE', 'PROD_Medico', parseInt(id), req.user.id, req.user.role);
   
-  logger.info('Médico deleted', {
+  logger.info('Profissional deleted', {
     user_id: req.user.id,
     medico_id: parseInt(id),
   });

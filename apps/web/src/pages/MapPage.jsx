@@ -1487,7 +1487,7 @@ export default function MapPage() {
                 <div style={{ textAlign: 'center', padding: '40px' }}>
                   <Spin size="large" />
                   <div style={{ marginTop: '16px', color: '#666' }}>
-                    Carregando médicos...
+                    Carregando profissionais...
                   </div>
                 </div>
               ) : medicos.length > 0 ? (
@@ -1498,7 +1498,7 @@ export default function MapPage() {
                     color: '#666',
                     fontWeight: '500',
                   }}>
-                    {medicos.length} {medicos.length === 1 ? 'médico encontrado' : 'médicos encontrados'}
+                    {medicos.length} {medicos.length === 1 ? 'profissional encontrado' : 'profissionais encontrados'}
                   </div>
                   <div style={{
                     maxHeight: '400px',
@@ -1622,7 +1622,7 @@ export default function MapPage() {
                 <div style={{ textAlign: 'center', padding: '40px' }}>
                   <Spin size="large" />
                   <div style={{ marginTop: '16px', color: '#666' }}>
-                    Carregando médicos...
+                    Carregando profissionais...
                   </div>
                 </div>
               ) : (() => {
@@ -1639,7 +1639,7 @@ export default function MapPage() {
                       color: '#666',
                       fontWeight: '500',
                     }}>
-                      {medicosFiltrados.length} {medicosFiltrados.length === 1 ? 'médico encontrado' : 'médicos encontrados'}
+                      {medicosFiltrados.length} {medicosFiltrados.length === 1 ? 'profissional encontrado' : 'profissionais encontrados'}
                     </div>
                     <div style={{
                       maxHeight: '400px',
@@ -1703,7 +1703,7 @@ export default function MapPage() {
                 ) : (
                   <Empty
                     image={Empty.PRESENTED_IMAGE_SIMPLE}
-                    description={`Nenhum médico encontrado para a especialidade "${selectedEspecialidade.nome}"`}
+                    description={`Nenhum profissional encontrado para a especialidade "${selectedEspecialidade.nome}"`}
                     style={{ padding: '40px 0' }}
                   />
                 )

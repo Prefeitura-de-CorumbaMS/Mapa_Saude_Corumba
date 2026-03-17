@@ -8,7 +8,7 @@ import DashboardPage from './pages/admin/DashboardPage'
 import AnalyticsPage from './pages/admin/AnalyticsPage'
 import StagingPage from './pages/admin/StagingPage'
 import UnidadesPage from './pages/admin/UnidadesPage'
-import MedicosPage from './pages/admin/MedicosPage'
+import ProfissionaisPage from './pages/admin/ProfissionaisPage'
 import EspecialidadesPage from './pages/admin/EspecialidadesPage'
 import IconesPage from './pages/admin/IconesPage'
 import BairrosPage from './pages/admin/BairrosPage'
@@ -39,7 +39,7 @@ function App() {
           <Route path="analytics" element={<AnalyticsPage />} />
           <Route path="staging" element={<StagingPage />} />
           <Route path="unidades" element={<UnidadesPage />} />
-          <Route path="medicos" element={<MedicosPage />} />
+          <Route path="profissionais" element={<ProfissionaisPage />} />
           <Route path="especialidades" element={<EspecialidadesPage />} />
           <Route path="icones" element={<IconesPage />} />
           <Route path="bairros" element={<BairrosPage />} />

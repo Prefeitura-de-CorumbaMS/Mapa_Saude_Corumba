@@ -11,7 +11,7 @@ export default function AuditFilters({ onFilter, initialValues }) {
 
   const tables = [
     { label: 'Unidades de Saúde', value: 'PROD_Unidade_Saude' },
-    { label: 'Médicos', value: 'PROD_Medico' },
+    { label: 'Profissionais de Saúde', value: 'PROD_Medico' },
     { label: 'Especialidades', value: 'PROD_Especialidade' },
     { label: 'Bairros', value: 'PROD_Bairro' },
     { label: 'Ícones', value: 'PROD_Icone' },
