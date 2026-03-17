@@ -5,6 +5,7 @@ import { PictureOutlined, DownOutlined, UpOutlined } from '@ant-design/icons'
 // Helper para obter URL completa da imagem
 const getFullImageUrl = (url) => {
   if (!url) return ''
+  // Se já é URL completa, retorna como está
   if (url.startsWith('http')) return url
   // Em desenvolvimento, usar proxy do Vite (paths relativos)
   // Em produção, VITE_API_URL terá o domínio completo

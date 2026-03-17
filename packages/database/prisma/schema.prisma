@@ -62,7 +62,8 @@ model PROD_Unidade_Saude {
   longitude           Decimal                          @db.Decimal(11, 8) // NOT NULL - obrigatório para mapa
   telefone            String?                          @db.VarChar(100)
   whatsapp            String?                          @db.VarChar(100)
-  enfermeiro_responsavel String?                       @db.VarChar(255)
+    enfermeiro_responsavel String?                       @db.VarChar(255)
+    diretor_adjunto      String?                          @db.VarChar(255)
   horario_atendimento String?                          @db.Text
   imagem_url          String?                          @db.VarChar(500)
   icone_url           String?                          @db.VarChar(500)

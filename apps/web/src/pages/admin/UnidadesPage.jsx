@@ -139,6 +139,7 @@ export default function UnidadesPage() {
       telefone: unidade.telefone,
       whatsapp: unidade.whatsapp,
       enfermeiro_responsavel: unidade.enfermeiro_responsavel,
+      diretor_adjunto: unidade.diretor_adjunto || null,
       horario_atendimento: unidade.horario_atendimento,
       sala_vacina: unidade.sala_vacina || false,
       ativo: unidade.ativo,
@@ -182,6 +183,7 @@ export default function UnidadesPage() {
         telefone: values.telefone || null,
         whatsapp: values.whatsapp || null,
         enfermeiro_responsavel: values.enfermeiro_responsavel || null,
+        diretor_adjunto: values.diretor_adjunto || null,
         horario_atendimento: values.horario_atendimento || null,
         sala_vacina: values.sala_vacina || false,
         ativo: values.ativo ?? true,
@@ -600,6 +602,10 @@ export default function UnidadesPage() {
 
           <Form.Item label="Enfermeiro(a) Responsável" name="enfermeiro_responsavel">
             <Input placeholder="Nome do(a) enfermeiro(a) responsável" />
+          </Form.Item>
+
+          <Form.Item label="Diretor(a) Adjunto" name="diretor_adjunto">
+            <Input placeholder="Nome do(a) diretor(a) adjunto" />
           </Form.Item>
 
           <Form.Item label="Horário de Atendimento" name="horario_atendimento">

@@ -184,28 +184,49 @@ router.put('/:id', authenticate, requireAdmin, asyncHandler(async (req, res) => 
 router.delete('/:id', authenticate, requireAdmin, asyncHandler(async (req, res) => {
   const { id } = req.params;
   
-  // Verificar se há unidades usando este ícone
-  const unidadesUsando = await prisma.pROD_Unidade_Saude.count({
-    where: { icone_url: { contains: req.params.id } },
+  // Buscar o ícone para obter a URL e verificar existência
+  const icone = await prisma.pROD_Icone.findUnique({
+    where: { id: parseInt(id) },
   });
-  
+
+  if (!icone) {
+    return res.status(404).json({
+      success: false,
+      error: 'Ícone não encontrado',
+    });
+  }
+
+  // Verificar se há unidades usando este ícone (comparar pela URL)
+  const unidadesUsando = await prisma.pROD_Unidade_Saude.count({
+    where: { icone_url: { contains: icone.url } },
+  });
+
   if (unidadesUsando > 0) {
     return res.status(400).json({
       success: false,
       error: `Não é possível excluir. ${unidadesUsando} unidade(s) está(ão) usando este ícone.`,
     });
   }
-  
-  await prisma.pROD_Icone.update({
+
+  await prisma.pROD_Icone.delete({
     where: { id: parseInt(id) },
-    data: { ativo: false },
   });
-  
-  logger.info(`Ícone desativado: ID ${id}`);
-  
+
+  // Remover arquivo físico do disco (se for armazenado localmente)
+  if (icone.url && icone.url.startsWith('/uploads/')) {
+    const relativePath = icone.url.replace(/^\/uploads\//, '');
+    const filePath = path.join(__dirname, '../../../../uploads', relativePath);
+    if (fs.existsSync(filePath)) {
+      fs.unlinkSync(filePath);
+      logger.info(`Arquivo físico removido: ${filePath}`);
+    }
+  }
+
+  logger.info(`Ícone excluído: ${icone.nome} (ID ${id})`);
+
   res.json({
     success: true,
-    message: 'Ícone desativado com sucesso',
+    message: 'Ícone excluído com sucesso',
   });
 }));
 

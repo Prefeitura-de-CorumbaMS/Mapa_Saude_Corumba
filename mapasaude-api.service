@@ -1,0 +1,26 @@
+[Unit]
+Description=Mapa Saúde Corumbá - API Backend
+Documentation=https://github.com/Prefeitura-de-CorumbaMS/Mapa_Saude_Corumba
+After=network.target mysql.service
+
+[Service]
+Type=simple
+User=elizaelramos
+WorkingDirectory=/var/www/Mapa_Saude_Corumba
+EnvironmentFile=/var/www/Mapa_Saude_Corumba/.env.production
+ExecStart=/usr/bin/node apps/api/src/index.js
+Restart=on-failure
+RestartSec=10
+StandardOutput=append:/var/www/Mapa_Saude_Corumba/logs/api-stdout.log
+StandardError=append:/var/www/Mapa_Saude_Corumba/logs/api-stderr.log
+
+# Limites de recursos
+LimitNOFILE=65536
+TimeoutStartSec=30s
+
+# Segurança
+NoNewPrivileges=true
+PrivateTmp=true
+
+[Install]
+WantedBy=multi-user.target
