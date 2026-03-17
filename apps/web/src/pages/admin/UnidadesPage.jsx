@@ -127,7 +127,7 @@ export default function UnidadesPage() {
 
     // Set image and icon if available
     setImageUrl(unidade.imagem_url || null)
-    setSelectedIcon(unidade.icone_url || null)
+    setSelectedIcon(unidade.icone_id || null)
 
     // Set basic form fields
     form.setFieldsValue({
@@ -189,7 +189,7 @@ export default function UnidadesPage() {
         ativo: values.ativo ?? true,
         medicos: selectedMedicos,
         imagem_url: imageUrl || null,
-        icone_url: selectedIcon || null,
+        icone_id: selectedIcon || null,
         // Especialidades serão calculadas automaticamente no backend baseado nos médicos
       }
 
@@ -669,15 +669,15 @@ export default function UnidadesPage() {
               <Space size="large" wrap>
                 {(iconesData?.data || []).map((icon) => (
                   <div
-                    key={icon.url}
-                    onClick={() => setSelectedIcon(icon.url)}
+                    key={icon.id}
+                    onClick={() => setSelectedIcon(selectedIcon === icon.id ? null : icon.id)}
                     style={{
-                      border: selectedIcon === icon.url ? '3px solid #1890ff' : '2px solid #d9d9d9',
+                      border: selectedIcon === icon.id ? '3px solid #1890ff' : '2px solid #d9d9d9',
                       borderRadius: '8px',
                       padding: '8px',
                       cursor: 'pointer',
                       transition: 'all 0.3s',
-                      backgroundColor: selectedIcon === icon.url ? '#e6f7ff' : 'white',
+                      backgroundColor: selectedIcon === icon.id ? '#e6f7ff' : 'white',
                       display: 'flex',
                       flexDirection: 'column',
                       alignItems: 'center',
@@ -692,18 +692,23 @@ export default function UnidadesPage() {
                       alt={icon.nome}
                       style={{ maxWidth: '50px', maxHeight: '50px', objectFit: 'contain' }}
                     />
-                    <span style={{ fontSize: '11px', color: '#666', textAlign: 'center', fontWeight: selectedIcon === icon.url ? 'bold' : 'normal' }}>
+                    <span style={{ fontSize: '11px', color: '#666', textAlign: 'center', fontWeight: selectedIcon === icon.id ? 'bold' : 'normal' }}>
                       {icon.nome}
                     </span>
                   </div>
                 ))}
               </Space>
-              {selectedIcon && (
-                <div style={{ marginTop: 8 }}>
-                  <strong>Ícone selecionado:</strong>{' '}
-                  <span style={{ fontSize: '12px', color: '#666' }}>{selectedIcon}</span>
-                </div>
-              )}
+              {selectedIcon && (() => {
+                const icone = (iconesData?.data || []).find(i => i.id === selectedIcon)
+                return icone ? (
+                  <div style={{ marginTop: 8, display: 'flex', alignItems: 'center', gap: 8 }}>
+                    <strong>Selecionado:</strong>
+                    <img src={getFullImageUrl(icone.url)} alt={icone.nome} style={{ width: 24, height: 24, objectFit: 'contain' }} />
+                    <span style={{ fontSize: '12px', color: '#666' }}>{icone.nome}</span>
+                    <Button size="small" type="link" danger onClick={() => setSelectedIcon(null)}>Remover</Button>
+                  </div>
+                ) : null
+              })()}
               <div style={{ fontSize: '12px', color: '#1890ff', marginTop: 8 }}>
                 💡 Para adicionar novos ícones, acesse o menu <a href="/admin/icones" target="_blank" style={{ fontWeight: 'bold' }}>Ícones</a>
               </div>

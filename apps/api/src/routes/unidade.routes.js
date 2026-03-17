@@ -40,6 +40,7 @@ router.get('/', asyncHandler(async (req, res) => {
           where: { ativo: true },
           orderBy: { ordem: 'asc' },
         },
+        icone: true,
       },
       orderBy: { nome: 'asc' },
     }),
@@ -55,6 +56,8 @@ router.get('/', asyncHandler(async (req, res) => {
       .filter(e => e.ativo && e.visivel_para_usuario),
     redes_sociais: u.redes_sociais,
     servicos: u.servicos,
+    // Expor URL do ícone resolvida a partir da relação
+    icone_url: u.icone?.url || u.icone_url || null,
   }));
 
   res.json({
@@ -89,6 +92,7 @@ router.get('/:id', asyncHandler(async (req, res) => {
         where: { ativo: true },
         orderBy: { ordem: 'asc' },
       },
+      icone: true,
     },
   });
 
@@ -109,6 +113,7 @@ router.get('/:id', asyncHandler(async (req, res) => {
         .filter(e => e.ativo && e.visivel_para_usuario),
       redes_sociais: unidade.redes_sociais,
       servicos: unidade.servicos,
+      icone_url: unidade.icone?.url || unidade.icone_url || null,
     },
   });
 }));
@@ -218,7 +223,7 @@ router.post('/', authenticate, requireAdmin, asyncHandler(async (req, res) => {
  */
 router.put('/:id', authenticate, requireAdmin, asyncHandler(async (req, res) => {
   const { id } = req.params;
-  const { nome, endereco, bairro, latitude, longitude, telefone, whatsapp, enfermeiro_responsavel, diretor_adjunto, horario_atendimento, sala_vacina, ativo, imagem_url, icone_url, especialidades, medicos } = req.body;
+  const { nome, endereco, bairro, latitude, longitude, telefone, whatsapp, enfermeiro_responsavel, diretor_adjunto, horario_atendimento, sala_vacina, ativo, imagem_url, icone_id, especialidades, medicos } = req.body;
 
   const updateData = {};
   if (nome) updateData.nome = nome;
@@ -234,7 +239,7 @@ router.put('/:id', authenticate, requireAdmin, asyncHandler(async (req, res) => 
   if (typeof sala_vacina === 'boolean') updateData.sala_vacina = sala_vacina;
   if (typeof ativo === 'boolean') updateData.ativo = ativo;
   if (imagem_url !== undefined) updateData.imagem_url = imagem_url;
-  if (icone_url !== undefined) updateData.icone_url = icone_url;
+  if (icone_id !== undefined) updateData.icone_id = icone_id ? parseInt(icone_id) : null;
 
   const unidade = await prisma.pROD_Unidade_Saude.update({
     where: { id: parseInt(id) },

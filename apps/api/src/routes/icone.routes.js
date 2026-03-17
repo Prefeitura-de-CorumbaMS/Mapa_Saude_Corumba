@@ -196,9 +196,9 @@ router.delete('/:id', authenticate, requireAdmin, asyncHandler(async (req, res) 
     });
   }
 
-  // Verificar se há unidades usando este ícone (comparar pela URL)
+  // Verificar se há unidades usando este ícone (pela FK icone_id)
   const unidadesUsando = await prisma.pROD_Unidade_Saude.count({
-    where: { icone_url: { contains: icone.url } },
+    where: { icone_id: parseInt(id) },
   });
 
   if (unidadesUsando > 0) {

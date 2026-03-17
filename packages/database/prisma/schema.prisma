@@ -67,6 +67,7 @@ model PROD_Unidade_Saude {
   horario_atendimento String?                          @db.Text
   imagem_url          String?                          @db.VarChar(500)
   icone_url           String?                          @db.VarChar(500)
+  icone_id            Int?
   sala_vacina         Boolean                          @default(false)
   sala_vacina_info    String?                          @db.Text
   id_origem           String                           @unique @db.VarChar(100)
@@ -79,10 +80,12 @@ model PROD_Unidade_Saude {
   medicos             Junction_Unidade_Medico[]
   redes_sociais       PROD_Unidade_RedeSocial[]
   servicos            PROD_Unidade_Servico[]
+  icone               PROD_Icone?                      @relation(fields: [icone_id], references: [id], onDelete: SetNull)
 
   @@index([ativo])
   @@index([latitude, longitude])
   @@index([sala_vacina])
+  @@index([icone_id])
   @@map("prod_unidade_saude")
 }
 
@@ -331,6 +334,9 @@ model PROD_Icone {
   ordem      Int      @default(0)
   created_at DateTime @default(now())
   updated_at DateTime @updatedAt
+
+  // Relações
+  unidades   PROD_Unidade_Saude[]
 
   @@index([ativo])
   @@index([ordem])
