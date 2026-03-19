@@ -30,7 +30,7 @@ const baseQueryWithReauth = async (args, api, extraOptions) => {
 export const apiSlice = createApi({
   reducerPath: 'api',
   baseQuery: baseQueryWithReauth,
-  tagTypes: ['Unidades', 'Profissionais', 'Especialidades', 'Staging', 'Users', 'Audit', 'Bairros', 'Icones', 'Analytics'],
+  tagTypes: ['Unidades', 'Profissionais', 'Especialidades', 'Staging', 'Users', 'Audit', 'Bairros', 'Icones', 'Analytics', 'Vigilancia'],
   keepUnusedDataFor: 300, // Cache por 5 minutos (300 segundos)
   endpoints: (builder) => ({
     // Auth
@@ -360,6 +360,33 @@ export const apiSlice = createApi({
       query: () => '/analytics/stats',
       providesTags: ['Analytics'],
     }),
+
+    // Vigilância em Saúde - Dengue
+    getDengueBySE: builder.query({
+      query: ({ ano, se }) => `/vigilancia/dengue/se?ano=${ano}&se=${se}`,
+      providesTags: ['Vigilancia'],
+      keepUnusedDataFor: 600, // Cache 10 minutos
+    }),
+
+    getDengueSerie: builder.query({
+      query: ({ ano, se_inicio, se_fim }) =>
+        `/vigilancia/dengue/serie?ano=${ano}&se_inicio=${se_inicio}&se_fim=${se_fim}`,
+      providesTags: ['Vigilancia'],
+      keepUnusedDataFor: 600,
+    }),
+
+    getDenguePerfil: builder.query({
+      query: ({ ano, se }) => `/vigilancia/dengue/perfil?ano=${ano}&se=${se}`,
+      providesTags: ['Vigilancia'],
+      keepUnusedDataFor: 600,
+    }),
+
+    getDengueBairros: builder.query({
+      query: ({ ano, se, tipo }) =>
+        `/vigilancia/dengue/bairros?ano=${ano}&se=${se}&tipo=${tipo}`,
+      providesTags: ['Vigilancia'],
+      keepUnusedDataFor: 600,
+    }),
   }),
 })
 
@@ -405,4 +432,8 @@ export const {
   useDeleteIconeMutation,
   useReordenarIconesMutation,
   useGetAnalyticsStatsQuery,
+  useGetDengueBySEQuery,
+  useGetDengueSerieQuery,
+  useGetDenguePerfilQuery,
+  useGetDengueBairrosQuery,
 } = apiSlice

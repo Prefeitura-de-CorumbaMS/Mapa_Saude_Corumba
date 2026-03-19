@@ -2,6 +2,7 @@ import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom'
 import { useSelector } from 'react-redux'
 import PublicLayout from './layouts/PublicLayout'
 import AdminLayout from './layouts/AdminLayout'
+import VigilanciaLayout from './layouts/VigilanciaLayout'
 import LoginPage from './pages/LoginPage'
 import MapPage from './pages/MapPage'
 import DashboardPage from './pages/admin/DashboardPage'
@@ -14,6 +15,7 @@ import IconesPage from './pages/admin/IconesPage'
 import BairrosPage from './pages/admin/BairrosPage'
 import UsersPage from './pages/admin/UsersPage'
 import AuditPage from './pages/admin/AuditPage'
+import DengueVigilanciaPage from './pages/vigilancia/DengueVigilanciaPage'
 
 function App() {
   return (
@@ -27,6 +29,12 @@ function App() {
         {/* Public Routes */}
         <Route path="/" element={<PublicLayout />}>
           <Route index element={<MapPage />} />
+        </Route>
+
+        {/* Vigilância em Saúde - Public Routes */}
+        <Route path="/vigilancia" element={<VigilanciaLayout />}>
+          <Route index element={<Navigate to="/vigilancia/dengue" replace />} />
+          <Route path="dengue" element={<DengueVigilanciaPage />} />
         </Route>
 
         {/* Auth Routes */}

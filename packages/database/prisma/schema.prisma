@@ -359,3 +359,83 @@ model ANALYTICS_Event {
   @@index([tipo, created_at])
   @@map("analytics_event")
 }
+
+// ============================================================================
+// VIGILÂNCIA EM SAÚDE - Dados epidemiológicos
+// ============================================================================
+
+// DENGUE - Dados por Semana Epidemiológica
+model VIGILANCIA_Dengue_SE {
+  id                    Int      @id @default(autoincrement())
+  ano                   Int
+  semana_epidemiologica Int      // 1-53
+
+  // KPIs da SE
+  casos_notificados     Int      @default(0)
+  casos_confirmados     Int      @default(0)
+  sorotipo_tipo1        Int      @default(0)
+  sorotipo_tipo2        Int      @default(0)
+  sorotipo_tipo3        Int      @default(0)
+  sorotipo_tipo4        Int      @default(0)
+  isolamentos_virais    Int      @default(0)
+  obitos                Int      @default(0)
+
+  // Metadados
+  fonte                 String?  @db.VarChar(100)
+  data_publicacao       DateTime?
+  observacoes           String?  @db.Text
+
+  created_at            DateTime @default(now())
+  updated_at            DateTime @updatedAt
+
+  // Relações
+  perfil_casos          VIGILANCIA_Dengue_Perfil[]
+  casos_bairros         VIGILANCIA_Dengue_Bairro[]
+
+  @@unique([ano, semana_epidemiologica])
+  @@index([ano])
+  @@index([semana_epidemiologica])
+  @@map("vigilancia_dengue_se")
+}
+
+// DENGUE - Perfil demográfico (faixa etária + sexo)
+model VIGILANCIA_Dengue_Perfil {
+  id                    Int      @id @default(autoincrement())
+  ano                   Int
+  semana_epidemiologica Int
+  faixa_etaria          String   @db.VarChar(20) // "< 2 anos", "2 a 4", etc
+  sexo                  String   @db.VarChar(1)  // "F", "M"
+  casos                 Int      @default(0)
+  created_at            DateTime @default(now())
+
+  dengue_se_id          Int
+  dengue_se             VIGILANCIA_Dengue_SE @relation(fields: [dengue_se_id], references: [id], onDelete: Cascade)
+
+  @@index([ano, semana_epidemiologica])
+  @@index([dengue_se_id])
+  @@map("vigilancia_dengue_perfil")
+}
+
+// DENGUE - Distribuição por bairro
+model VIGILANCIA_Dengue_Bairro {
+  id                    Int      @id @default(autoincrement())
+  ano                   Int
+  semana_epidemiologica Int
+  bairro                String   @db.VarChar(100)
+  notificados           Int      @default(0)
+  confirmados           Int      @default(0)
+
+  // Coordenadas para futuro mapa de calor (centroide do bairro)
+  latitude              Decimal? @db.Decimal(10, 8)
+  longitude             Decimal? @db.Decimal(11, 8)
+
+  created_at            DateTime @default(now())
+
+  dengue_se_id          Int
+  dengue_se             VIGILANCIA_Dengue_SE @relation(fields: [dengue_se_id], references: [id], onDelete: Cascade)
+
+  @@index([ano, semana_epidemiologica])
+  @@index([bairro])
+  @@index([dengue_se_id])
+  @@map("vigilancia_dengue_bairro")
+}

@@ -17,7 +17,9 @@ import {
   LinkOutlined,
   CloseCircleOutlined,
   CompassOutlined,
+  AlertOutlined,
 } from '@ant-design/icons'
+import { useNavigate } from 'react-router-dom'
 import L from 'leaflet'
 import { useGetUnidadesQuery, useGetUnidadeMedicosQuery, useGetLastUpdateQuery, useGetIconesQuery } from '../store/slices/apiSlice'
 import MapLegend from '../components/MapLegend'
@@ -246,6 +248,7 @@ const getRedeSocialIcon = (nomeRede) => {
 }
 
 export default function MapPage() {
+  const navigate = useNavigate()
   const [selectedUnidade, setSelectedUnidade] = useState(null)
   const [sidebarCollapsed, setSidebarCollapsed] = useState(false)
   const [medicosModalVisible, setMedicosModalVisible] = useState(false)
@@ -926,6 +929,26 @@ export default function MapPage() {
                     <br />
                     Clique em um ponto no mapa para ver os detalhes.
                   </p>
+
+                  {/* Botão Vigilância em Saúde */}
+                  <Button
+                    type="primary"
+                    icon={<AlertOutlined />}
+                    onClick={() => navigate('/vigilancia')}
+                    block
+                    size="large"
+                    style={{
+                      backgroundColor: '#1F3473',
+                      borderColor: '#1F3473',
+                      fontWeight: 'bold',
+                      height: '56px',
+                      fontSize: '16px',
+                      marginBottom: '24px',
+                      boxShadow: '0 2px 8px rgba(31, 52, 115, 0.3)',
+                    }}
+                  >
+                    Vigilância em Saúde
+                  </Button>
 
                   {/* Componente de Busca */}
                   <Card

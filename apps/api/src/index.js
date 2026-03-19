@@ -18,6 +18,7 @@ const auditRoutes = require('./routes/audit.routes');
 const analyticsRoutes = require('./routes/analytics.routes');
 const uploadRoutes = require('./routes/upload.routes');
 const servicoRoutes = require('./routes/servico.routes');
+const vigilanciaRoutes = require('./routes/vigilancia.routes');
 
 const { errorHandler } = require('./middleware/error.middleware');
 
@@ -43,6 +44,7 @@ const publicLimiter = rateLimit({
   message: { success: false, error: 'Muitas requisições. Tente novamente mais tarde.' },
   standardHeaders: true,
   legacyHeaders: false,
+  validate: { trustProxy: false }, // Desabilita validação de trust proxy
   // Pular requisições autenticadas (admins não devem ser limitados)
   skip: (req) => {
     // Se tiver token de autenticação válido, não aplicar rate limit
@@ -57,6 +59,7 @@ const loginLimiter = rateLimit({
   message: { success: false, error: 'Muitas tentativas de login. Tente novamente em 15 minutos.' },
   standardHeaders: true,
   legacyHeaders: false,
+  validate: { trustProxy: false }, // Desabilita validação de trust proxy
 });
 
 // Security
@@ -139,7 +142,8 @@ app.use('/api/bairros', bairroRoutes);
 app.use('/api/icones', iconeRoutes);
 app.use('/api/servicos', publicLimiter, servicoRoutes); // Rate limit público para serviços
 app.use('/api/audit', auditRoutes);
-app.use('/api/analytics', rateLimit({ windowMs: 15 * 60 * 1000, max: 50, standardHeaders: true, legacyHeaders: false, skip: (req) => req.method !== 'POST' }), analyticsRoutes);
+app.use('/api/analytics', rateLimit({ windowMs: 15 * 60 * 1000, max: 50, standardHeaders: true, legacyHeaders: false, validate: { trustProxy: false }, skip: (req) => req.method !== 'POST' }), analyticsRoutes);
+app.use('/api/vigilancia', publicLimiter, vigilanciaRoutes); // Rate limit público para vigilância em saúde
 app.use('/api/upload', uploadRoutes);
 
 // 404 handler
