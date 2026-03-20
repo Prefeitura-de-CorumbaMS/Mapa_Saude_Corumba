@@ -1138,17 +1138,20 @@ router.get('/dengue/casos/se', async (req, res) => {
       data: {
         ano: parseInt(ano),
         semana_epidemiologica: parseInt(se),
-        casos_notificados: totalCasos,
-        casos_confirmados: totalCasos, // Por enquanto, todos são considerados confirmados
-        sorotipo_tipo1: 0,
-        sorotipo_tipo2: 0,
-        sorotipo_tipo3: 0,
-        sorotipo_tipo4: 0,
-        isolamentos_virais: 0,
-        obitos: 0,
+        periodo: `SE 01 a SE ${String(se).padStart(2, '0')}`,
+        kpis: {
+          casos_notificados: totalCasos,
+          casos_confirmados: totalCasos, // Por enquanto, todos são considerados confirmados
+          sorotipo_tipo1: 0,
+          sorotipo_tipo2: 0,
+          sorotipo_tipo3: 0,
+          sorotipo_tipo4: 0,
+          isolamentos_virais: 0,
+          obitos: 0,
+        },
         fonte: 'Casos Individuais Agregados',
-        periodo: `SE 1 a ${se}/${ano}`,
         data_publicacao: new Date(),
+        observacoes: null,
       },
     });
   } catch (error) {
