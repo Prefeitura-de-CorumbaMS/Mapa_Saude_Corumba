@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { Spin, Alert, Select, Card, Space, Typography, Tooltip } from 'antd';
+import { Spin, Alert, Select, Card, Space, Typography, Tooltip, Button } from 'antd';
 import { InfoCircleOutlined } from '@ant-design/icons';
 import {
   Chart as ChartJS,
@@ -20,6 +20,10 @@ import {
   useGetDengueSerieQuery,
   useGetDenguePerfilQuery,
   useGetDengueBairrosQuery,
+  useGetDengueCasosSEQuery,
+  useGetDengueCasosSerieQuery,
+  useGetDengueCasosPerfilQuery,
+  useGetDengueCasosBairrosQuery,
 } from '../../store/slices/apiSlice';
 import { getPeriodoFormatado, getPeriodoCurto, EXPLICACAO_SE } from '../../utils/calendarioEpidemiologico';
 
@@ -53,6 +57,7 @@ export default function DengueVigilanciaPage() {
   const anoAtual = 2026;
   const [seSelecionada, setSESelecionada] = useState(null);
   const [sesDisponiveis, setSEsDisponiveis] = useState([]);
+  const [usarCasos, setUsarCasos] = useState(true); // Toggle para usar dados de casos individuais
 
   // Buscar todas as SEs do ano para preencher o seletor
   const { data: dadosAno, isLoading: loadingAno } = useGetDengueByAnoQuery({ ano: anoAtual });
@@ -70,27 +75,56 @@ export default function DengueVigilanciaPage() {
     }
   }, [dadosAno, seSelecionada]);
 
-  // Buscar dados da SE selecionada
-  const { data: dadosSE, isLoading: loadingSE, error: errorSE } = useGetDengueBySEQuery(
-    { ano: anoAtual, se: seSelecionada },
-    { skip: !seSelecionada }
-  );
-  const { data: dadosSerie, isLoading: loadingSerie } = useGetDengueSerieQuery(
-    { ano: anoAtual, se_inicio: 1, se_fim: seSelecionada },
-    { skip: !seSelecionada }
-  );
-  const { data: dadosPerfil, isLoading: loadingPerfil } = useGetDenguePerfilQuery(
-    { ano: anoAtual, se: seSelecionada },
-    { skip: !seSelecionada }
-  );
-  const { data: dadosBairrosNotif, isLoading: loadingBairrosNotif } = useGetDengueBairrosQuery(
-    { ano: anoAtual, se: seSelecionada, tipo: 'notificados' },
-    { skip: !seSelecionada }
-  );
-  const { data: dadosBairrosConf, isLoading: loadingBairrosConf } = useGetDengueBairrosQuery(
-    { ano: anoAtual, se: seSelecionada, tipo: 'confirmados' },
-    { skip: !seSelecionada }
-  );
+  // Buscar dados da SE selecionada (agregados OU casos)
+  const { data: dadosSE, isLoading: loadingSE, error: errorSE } = usarCasos
+    ? useGetDengueCasosSEQuery(
+        { ano: anoAtual, se: seSelecionada },
+        { skip: !seSelecionada }
+      )
+    : useGetDengueBySEQuery(
+        { ano: anoAtual, se: seSelecionada },
+        { skip: !seSelecionada }
+      );
+
+  const { data: dadosSerie, isLoading: loadingSerie } = usarCasos
+    ? useGetDengueCasosSerieQuery(
+        { ano: anoAtual, se_inicio: 1, se_fim: seSelecionada },
+        { skip: !seSelecionada }
+      )
+    : useGetDengueSerieQuery(
+        { ano: anoAtual, se_inicio: 1, se_fim: seSelecionada },
+        { skip: !seSelecionada }
+      );
+
+  const { data: dadosPerfil, isLoading: loadingPerfil } = usarCasos
+    ? useGetDengueCasosPerfilQuery(
+        { ano: anoAtual, se: seSelecionada },
+        { skip: !seSelecionada }
+      )
+    : useGetDenguePerfilQuery(
+        { ano: anoAtual, se: seSelecionada },
+        { skip: !seSelecionada }
+      );
+
+  const { data: dadosBairrosNotif, isLoading: loadingBairrosNotif } = usarCasos
+    ? useGetDengueCasosBairrosQuery(
+        { ano: anoAtual, se: seSelecionada, tipo: 'notificados' },
+        { skip: !seSelecionada }
+      )
+    : useGetDengueBairrosQuery(
+        { ano: anoAtual, se: seSelecionada, tipo: 'notificados' },
+        { skip: !seSelecionada }
+      );
+
+  const { data: dadosBairrosConf, isLoading: loadingBairrosConf } = usarCasos
+    ? useGetDengueCasosBairrosQuery(
+        { ano: anoAtual, se: seSelecionada, tipo: 'confirmados' },
+        { skip: !seSelecionada }
+      )
+    : useGetDengueBairrosQuery(
+        { ano: anoAtual, se: seSelecionada, tipo: 'confirmados' },
+        { skip: !seSelecionada }
+      );
 
   const isLoading = loadingAno || loadingSE || loadingSerie || loadingPerfil || loadingBairrosNotif || loadingBairrosConf;
 
@@ -204,6 +238,28 @@ export default function DengueVigilanciaPage() {
                   </Text>
                 </div>
               )}
+
+              {/* Toggle de fonte de dados */}
+              <div style={{ marginTop: '12px', padding: '12px', background: 'rgba(255,255,255,0.1)', borderRadius: '8px' }}>
+                <Space align="center">
+                  <Text style={{ color: '#fff', fontSize: '12px', fontWeight: '500' }}>
+                    📊 Fonte de dados:
+                  </Text>
+                  <Button
+                    size="small"
+                    type={usarCasos ? 'primary' : 'default'}
+                    onClick={() => setUsarCasos(!usarCasos)}
+                    style={{
+                      background: usarCasos ? '#52c41a' : 'rgba(255,255,255,0.2)',
+                      borderColor: usarCasos ? '#52c41a' : 'rgba(255,255,255,0.3)',
+                      color: '#fff'
+                    }}
+                  >
+                    {usarCasos ? '✅ Casos Individuais' : '📋 Dados Agregados'}
+                  </Button>
+                </Space>
+              </div>
+
               <Text style={{ color: 'rgba(255,255,255,0.8)', fontSize: '12px' }}>
                 💡 Última atualização: SE {String(sesDisponiveis[0]).padStart(2, '0')} ({getPeriodoCurto(sesDisponiveis[0], anoAtual)})
               </Text>

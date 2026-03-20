@@ -900,4 +900,267 @@ router.delete('/dengue/caso/:id', authenticate, requireAdmin, asyncHandler(async
   });
 }));
 
+/**
+ * GET /api/vigilancia/dengue/casos/perfil?ano=2026&se=9
+ * Agrega casos individuais para gerar perfil demográfico
+ */
+router.get('/dengue/casos/perfil', async (req, res) => {
+  try {
+    const { ano, se } = req.query;
+
+    if (!ano || !se) {
+      return res.status(400).json({
+        success: false,
+        error: 'Parâmetros obrigatórios: ano e se',
+      });
+    }
+
+    // Buscar todos os casos até a SE informada
+    const casos = await prisma.vIGILANCIA_Dengue_Caso.findMany({
+      where: {
+        ano: parseInt(ano),
+        semana_epidemiologica: {
+          lte: parseInt(se),
+        },
+      },
+      select: {
+        sexo: true,
+        data_nascimento: true,
+      },
+    });
+
+    // Função para calcular faixa etária
+    const getFaixaEtaria = (dataNascimento) => {
+      if (!dataNascimento) return 'Não informado';
+
+      const idade = Math.floor((new Date() - new Date(dataNascimento)) / (365.25 * 24 * 60 * 60 * 1000));
+
+      if (idade < 2) return '< 2 anos';
+      if (idade <= 4) return '2 a 4';
+      if (idade <= 9) return '5 a 9';
+      if (idade <= 19) return '10 a 19';
+      if (idade <= 29) return '20 a 29';
+      if (idade <= 39) return '30 a 39';
+      if (idade <= 49) return '40 a 49';
+      if (idade <= 59) return '50 a 59';
+      return '60+';
+    };
+
+    // Agregar por faixa etária
+    const faixaEtariaMap = new Map();
+    casos.forEach(caso => {
+      const faixa = getFaixaEtaria(caso.data_nascimento);
+      faixaEtariaMap.set(faixa, (faixaEtariaMap.get(faixa) || 0) + 1);
+    });
+
+    // Agregar por sexo
+    let feminino = 0;
+    let masculino = 0;
+    casos.forEach(caso => {
+      if (caso.sexo === 'F') feminino++;
+      if (caso.sexo === 'M') masculino++;
+    });
+
+    res.json({
+      success: true,
+      data: {
+        faixa_etaria: {
+          labels: Array.from(faixaEtariaMap.keys()),
+          valores: Array.from(faixaEtariaMap.values()),
+        },
+        sexo: {
+          feminino,
+          masculino,
+        },
+      },
+    });
+  } catch (error) {
+    logger.error('Erro ao agregar perfil de casos', {
+      error: error.message,
+      stack: error.stack,
+    });
+    res.status(500).json({
+      success: false,
+      error: 'Erro interno do servidor',
+    });
+  }
+});
+
+/**
+ * GET /api/vigilancia/dengue/casos/bairros?ano=2026&se=9&tipo=notificados
+ * Agrega casos individuais por bairro
+ */
+router.get('/dengue/casos/bairros', async (req, res) => {
+  try {
+    const { ano, se, tipo = 'notificados' } = req.query;
+
+    if (!ano || !se) {
+      return res.status(400).json({
+        success: false,
+        error: 'Parâmetros obrigatórios: ano e se',
+      });
+    }
+
+    // Buscar casos até a SE informada
+    const casos = await prisma.vIGILANCIA_Dengue_Caso.findMany({
+      where: {
+        ano: parseInt(ano),
+        semana_epidemiologica: {
+          lte: parseInt(se),
+        },
+      },
+      select: {
+        bairro: true,
+      },
+    });
+
+    // Agregar por bairro
+    const bairrosMap = new Map();
+    casos.forEach(caso => {
+      if (!caso.bairro) return;
+      const bairro = caso.bairro.trim();
+      bairrosMap.set(bairro, (bairrosMap.get(bairro) || 0) + 1);
+    });
+
+    // Converter para array e ordenar
+    const dados = Array.from(bairrosMap.entries())
+      .map(([bairro, casos]) => ({ bairro, casos }))
+      .filter(d => d.casos > 0)
+      .sort((a, b) => b.casos - a.casos);
+
+    res.json({
+      success: true,
+      data: dados,
+    });
+  } catch (error) {
+    logger.error('Erro ao agregar casos por bairro', {
+      error: error.message,
+      stack: error.stack,
+    });
+    res.status(500).json({
+      success: false,
+      error: 'Erro interno do servidor',
+    });
+  }
+});
+
+/**
+ * GET /api/vigilancia/dengue/casos/serie?ano=2026&se_inicio=1&se_fim=10
+ * Agrega casos individuais para série temporal
+ */
+router.get('/dengue/casos/serie', async (req, res) => {
+  try {
+    const { ano, se_inicio = 1, se_fim } = req.query;
+
+    if (!ano || !se_fim) {
+      return res.status(400).json({
+        success: false,
+        error: 'Parâmetros obrigatórios: ano e se_fim',
+      });
+    }
+
+    // Buscar casos no range de SEs
+    const casos = await prisma.vIGILANCIA_Dengue_Caso.findMany({
+      where: {
+        ano: parseInt(ano),
+        semana_epidemiologica: {
+          gte: parseInt(se_inicio),
+          lte: parseInt(se_fim),
+        },
+      },
+      select: {
+        semana_epidemiologica: true,
+      },
+    });
+
+    // Agregar por SE
+    const seMap = new Map();
+    for (let se = parseInt(se_inicio); se <= parseInt(se_fim); se++) {
+      seMap.set(se, 0);
+    }
+
+    casos.forEach(caso => {
+      const se = caso.semana_epidemiologica;
+      seMap.set(se, (seMap.get(se) || 0) + 1);
+    });
+
+    // Converter para formato do gráfico
+    const serie = Array.from(seMap.entries())
+      .map(([se, casos]) => ({
+        semana: se,
+        casos: casos,
+      }))
+      .sort((a, b) => a.semana - b.semana);
+
+    res.json({
+      success: true,
+      data: serie,
+    });
+  } catch (error) {
+    logger.error('Erro ao agregar série de casos', {
+      error: error.message,
+      stack: error.stack,
+    });
+    res.status(500).json({
+      success: false,
+      error: 'Erro interno do servidor',
+    });
+  }
+});
+
+/**
+ * GET /api/vigilancia/dengue/casos/se?ano=2026&se=9
+ * Agrega totais de casos até uma SE específica
+ */
+router.get('/dengue/casos/se', async (req, res) => {
+  try {
+    const { ano, se } = req.query;
+
+    if (!ano || !se) {
+      return res.status(400).json({
+        success: false,
+        error: 'Parâmetros obrigatórios: ano e se',
+      });
+    }
+
+    // Contar casos até a SE
+    const totalCasos = await prisma.vIGILANCIA_Dengue_Caso.count({
+      where: {
+        ano: parseInt(ano),
+        semana_epidemiologica: {
+          lte: parseInt(se),
+        },
+      },
+    });
+
+    res.json({
+      success: true,
+      data: {
+        ano: parseInt(ano),
+        semana_epidemiologica: parseInt(se),
+        casos_notificados: totalCasos,
+        casos_confirmados: totalCasos, // Por enquanto, todos são considerados confirmados
+        sorotipo_tipo1: 0,
+        sorotipo_tipo2: 0,
+        sorotipo_tipo3: 0,
+        sorotipo_tipo4: 0,
+        isolamentos_virais: 0,
+        obitos: 0,
+        fonte: 'Casos Individuais Agregados',
+        periodo: `SE 1 a ${se}/${ano}`,
+        data_publicacao: new Date(),
+      },
+    });
+  } catch (error) {
+    logger.error('Erro ao agregar totais de casos', {
+      error: error.message,
+      stack: error.stack,
+    });
+    res.status(500).json({
+      success: false,
+      error: 'Erro interno do servidor',
+    });
+  }
+});
+
 module.exports = router;

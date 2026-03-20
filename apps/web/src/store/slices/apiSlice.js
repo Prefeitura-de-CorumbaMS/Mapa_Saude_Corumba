@@ -395,6 +395,33 @@ export const apiSlice = createApi({
       keepUnusedDataFor: 600,
     }),
 
+    // Vigilância - Dados agregados de casos individuais
+    getDengueCasosSE: builder.query({
+      query: ({ ano, se }) => `/vigilancia/dengue/casos/se?ano=${ano}&se=${se}`,
+      providesTags: ['Vigilancia'],
+      keepUnusedDataFor: 600,
+    }),
+
+    getDengueCasosSerie: builder.query({
+      query: ({ ano, se_inicio, se_fim }) =>
+        `/vigilancia/dengue/casos/serie?ano=${ano}&se_inicio=${se_inicio}&se_fim=${se_fim}`,
+      providesTags: ['Vigilancia'],
+      keepUnusedDataFor: 600,
+    }),
+
+    getDengueCasosPerfil: builder.query({
+      query: ({ ano, se }) => `/vigilancia/dengue/casos/perfil?ano=${ano}&se=${se}`,
+      providesTags: ['Vigilancia'],
+      keepUnusedDataFor: 600,
+    }),
+
+    getDengueCasosBairros: builder.query({
+      query: ({ ano, se, tipo }) =>
+        `/vigilancia/dengue/casos/bairros?ano=${ano}&se=${se}&tipo=${tipo}`,
+      providesTags: ['Vigilancia'],
+      keepUnusedDataFor: 600,
+    }),
+
     // Vigilância - Importação (Admin)
     importarVigilancia: builder.mutation({
       query: (data) => ({
@@ -511,6 +538,10 @@ export const {
   useGetDengueSerieQuery,
   useGetDenguePerfilQuery,
   useGetDengueBairrosQuery,
+  useGetDengueCasosSEQuery,
+  useGetDengueCasosSerieQuery,
+  useGetDengueCasosPerfilQuery,
+  useGetDengueCasosBairrosQuery,
   useImportarVigilanciaMutation,
   useUpdateDengueBairroMutation,
   useDeleteDengueBairroMutation,
