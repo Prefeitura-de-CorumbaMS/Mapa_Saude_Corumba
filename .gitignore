@@ -44,4 +44,9 @@ prisma/migrations/
 tmp/
 temp/
 
+# Private/Sensitive Data
+private/
+*.xlsx
+*.xls
+
 .venv/
