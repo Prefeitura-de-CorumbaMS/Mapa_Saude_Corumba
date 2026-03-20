@@ -268,4 +268,287 @@ router.get('/dengue/bairros', async (req, res) => {
   }
 });
 
+// ============================================================================
+// ADMIN ENDPOINTS - Importação de Dados
+// ============================================================================
+
+const { authenticate, requireAdmin } = require('../middleware/auth.middleware');
+
+/**
+ * POST /api/vigilancia/dengue/importar
+ * Importa dados de vigilância de dengue
+ *
+ * Body: {
+ *   tipo: 'notificados' | 'perfil' | 'kpis',
+ *   ano: number,
+ *   dados: Array
+ * }
+ */
+router.post('/dengue/importar', authenticate, requireAdmin, asyncHandler(async (req, res) => {
+  const { tipo, ano, dados } = req.body;
+  const userId = req.user.id;
+
+  // Validações
+  if (!tipo || !ano || !dados || !Array.isArray(dados)) {
+    return res.status(400).json({
+      success: false,
+      error: 'Parâmetros inválidos: tipo, ano e dados são obrigatórios',
+    });
+  }
+
+  if (!['notificados', 'perfil', 'kpis'].includes(tipo)) {
+    return res.status(400).json({
+      success: false,
+      error: 'Tipo inválido. Valores aceitos: notificados, perfil, kpis',
+    });
+  }
+
+  const anoAtual = new Date().getFullYear();
+  if (ano < 2020 || ano > anoAtual + 1) {
+    return res.status(400).json({
+      success: false,
+      error: `Ano inválido. Deve estar entre 2020 e ${anoAtual + 1}`,
+    });
+  }
+
+  if (dados.length === 0) {
+    return res.status(400).json({
+      success: false,
+      error: 'Array de dados está vazio',
+    });
+  }
+
+  // Processar importação
+  let resultado;
+
+  try {
+    if (tipo === 'notificados') {
+      resultado = await importarNotificados(ano, dados, userId);
+    } else if (tipo === 'perfil') {
+      resultado = await importarPerfil(ano, dados, userId);
+    } else if (tipo === 'kpis') {
+      resultado = await importarKPIs(ano, dados, userId);
+    }
+
+    // Log de auditoria (simplificado - pode ser expandido)
+    logger.info('Importação de vigilância realizada', {
+      user_id: userId,
+      tipo,
+      ano,
+      registros: dados.length,
+      resultado,
+    });
+
+    res.json({
+      success: true,
+      data: resultado,
+    });
+
+  } catch (error) {
+    logger.error('Erro na importação de vigilância', {
+      error: error.message,
+      stack: error.stack,
+      user_id: userId,
+      tipo,
+      ano,
+    });
+
+    res.status(500).json({
+      success: false,
+      error: error.message || 'Erro ao importar dados',
+    });
+  }
+}));
+
+/**
+ * Importa dados da aba NOTIFICADOS (casos por bairro)
+ */
+async function importarNotificados(ano, dados, userId) {
+  return await prisma.$transaction(async (tx) => {
+    // Agrupar dados por SE
+    const dadosPorSE = dados.reduce((acc, item) => {
+      if (!acc[item.se]) {
+        acc[item.se] = [];
+      }
+      acc[item.se].push(item);
+      return acc;
+    }, {});
+
+    const sesProcessadas = [];
+    let bairrosInseridos = 0;
+
+    for (const [se, registrosSE] of Object.entries(dadosPorSE)) {
+      const seNum = parseInt(se);
+
+      // Calcular totais da SE
+      const totais = registrosSE.reduce(
+        (acc, r) => ({
+          notificados: acc.notificados + r.notificados,
+          confirmados: acc.confirmados + r.confirmados,
+        }),
+        { notificados: 0, confirmados: 0 }
+      );
+
+      // 1. Upsert registro da SE
+      const dengueSE = await tx.vIGILANCIA_Dengue_SE.upsert({
+        where: {
+          ano_semana_epidemiologica: {
+            ano: ano,
+            semana_epidemiologica: seNum,
+          },
+        },
+        update: {
+          casos_notificados: totais.notificados,
+          casos_confirmados: totais.confirmados,
+          updated_at: new Date(),
+        },
+        create: {
+          ano,
+          semana_epidemiologica: seNum,
+          casos_notificados: totais.notificados,
+          casos_confirmados: totais.confirmados,
+          sorotipo_tipo1: 0,
+          sorotipo_tipo2: 0,
+          sorotipo_tipo3: 0,
+          sorotipo_tipo4: 0,
+          isolamentos_virais: 0,
+          obitos: 0,
+          fonte: 'Importação Manual',
+          data_publicacao: new Date(),
+        },
+      });
+
+      sesProcessadas.push(dengueSE);
+
+      // 2. Deletar dados de bairro existentes para esta SE
+      await tx.vIGILANCIA_Dengue_Bairro.deleteMany({
+        where: {
+          ano,
+          semana_epidemiologica: seNum,
+        },
+      });
+
+      // 3. Inserir novos dados de bairro
+      for (const registro of registrosSE) {
+        await tx.vIGILANCIA_Dengue_Bairro.create({
+          data: {
+            ano,
+            semana_epidemiologica: seNum,
+            bairro: registro.bairro,
+            notificados: registro.notificados,
+            confirmados: registro.confirmados,
+            dengue_se_id: dengueSE.id,
+          },
+        });
+        bairrosInseridos++;
+      }
+    }
+
+    return {
+      semanas_processadas: sesProcessadas.length,
+      bairros_inseridos: bairrosInseridos,
+    };
+  });
+}
+
+/**
+ * Importa dados de perfil demográfico
+ */
+async function importarPerfil(ano, dados, userId) {
+  return await prisma.$transaction(async (tx) => {
+    // Agrupar por SE
+    const dadosPorSE = dados.reduce((acc, item) => {
+      if (!acc[item.se]) {
+        acc[item.se] = [];
+      }
+      acc[item.se].push(item);
+      return acc;
+    }, {});
+
+    let perfisInseridos = 0;
+
+    for (const [se, registrosSE] of Object.entries(dadosPorSE)) {
+      const seNum = parseInt(se);
+
+      // Buscar SE
+      const dengueSE = await tx.vIGILANCIA_Dengue_SE.findUnique({
+        where: {
+          ano_semana_epidemiologica: {
+            ano,
+            semana_epidemiologica: seNum,
+          },
+        },
+      });
+
+      if (!dengueSE) {
+        throw new Error(
+          `SE ${seNum}/${ano} não encontrada. Importe os dados notificados primeiro.`
+        );
+      }
+
+      // Deletar perfil existente
+      await tx.vIGILANCIA_Dengue_Perfil.deleteMany({
+        where: {
+          ano,
+          semana_epidemiologica: seNum,
+        },
+      });
+
+      // Inserir novo perfil
+      for (const registro of registrosSE) {
+        await tx.vIGILANCIA_Dengue_Perfil.create({
+          data: {
+            ano,
+            semana_epidemiologica: seNum,
+            faixa_etaria: registro.faixa_etaria,
+            sexo: registro.sexo,
+            casos: registro.casos,
+            dengue_se_id: dengueSE.id,
+          },
+        });
+        perfisInseridos++;
+      }
+    }
+
+    return {
+      perfis_inseridos: perfisInseridos,
+    };
+  });
+}
+
+/**
+ * Importa KPIs da SE (sorotipos, óbitos, isolamentos)
+ */
+async function importarKPIs(ano, dados, userId) {
+  return await prisma.$transaction(async (tx) => {
+    let sesAtualizadas = 0;
+
+    for (const registro of dados) {
+      const dengueSE = await tx.vIGILANCIA_Dengue_SE.update({
+        where: {
+          ano_semana_epidemiologica: {
+            ano,
+            semana_epidemiologica: registro.se,
+          },
+        },
+        data: {
+          sorotipo_tipo1: registro.tipo1 || 0,
+          sorotipo_tipo2: registro.tipo2 || 0,
+          sorotipo_tipo3: registro.tipo3 || 0,
+          sorotipo_tipo4: registro.tipo4 || 0,
+          isolamentos_virais: registro.isolamentos || 0,
+          obitos: registro.obitos || 0,
+          updated_at: new Date(),
+        },
+      });
+
+      sesAtualizadas++;
+    }
+
+    return {
+      semanas_atualizadas: sesAtualizadas,
+    };
+  });
+}
+
 module.exports = router;

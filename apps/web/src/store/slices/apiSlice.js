@@ -387,6 +387,16 @@ export const apiSlice = createApi({
       providesTags: ['Vigilancia'],
       keepUnusedDataFor: 600,
     }),
+
+    // Vigilância - Importação (Admin)
+    importarVigilancia: builder.mutation({
+      query: (data) => ({
+        url: '/vigilancia/dengue/importar',
+        method: 'POST',
+        body: data,
+      }),
+      invalidatesTags: ['Vigilancia'],
+    }),
   }),
 })
 
@@ -436,4 +446,5 @@ export const {
   useGetDengueSerieQuery,
   useGetDenguePerfilQuery,
   useGetDengueBairrosQuery,
+  useImportarVigilanciaMutation,
 } = apiSlice

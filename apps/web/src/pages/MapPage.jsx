@@ -930,26 +930,6 @@ export default function MapPage() {
                     Clique em um ponto no mapa para ver os detalhes.
                   </p>
 
-                  {/* Botão Vigilância em Saúde */}
-                  <Button
-                    type="primary"
-                    icon={<AlertOutlined />}
-                    onClick={() => navigate('/vigilancia')}
-                    block
-                    size="large"
-                    style={{
-                      backgroundColor: '#1F3473',
-                      borderColor: '#1F3473',
-                      fontWeight: 'bold',
-                      height: '56px',
-                      fontSize: '16px',
-                      marginBottom: '24px',
-                      boxShadow: '0 2px 8px rgba(31, 52, 115, 0.3)',
-                    }}
-                  >
-                    Vigilância em Saúde
-                  </Button>
-
                   {/* Componente de Busca */}
                   <Card
                     style={{
@@ -1277,6 +1257,63 @@ export default function MapPage() {
                         )}
                       </div>
                     )}
+                  </Card>
+
+                  {/* Card Vigilância em Saúde */}
+                  <Card
+                    hoverable
+                    onClick={() => navigate('/vigilancia')}
+                    style={{
+                      marginTop: '24px',
+                      background: 'linear-gradient(135deg, #1F3473 0%, #2a4a9e 100%)',
+                      border: 'none',
+                      borderRadius: '12px',
+                      boxShadow: '0 4px 12px rgba(31, 52, 115, 0.3)',
+                      cursor: 'pointer',
+                      transition: 'all 0.3s ease',
+                    }}
+                    bodyStyle={{ padding: '20px' }}
+                    onMouseEnter={(e) => {
+                      e.currentTarget.style.transform = 'translateY(-2px)'
+                      e.currentTarget.style.boxShadow = '0 6px 16px rgba(31, 52, 115, 0.4)'
+                    }}
+                    onMouseLeave={(e) => {
+                      e.currentTarget.style.transform = 'translateY(0)'
+                      e.currentTarget.style.boxShadow = '0 4px 12px rgba(31, 52, 115, 0.3)'
+                    }}
+                  >
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '16px' }}>
+                      <div style={{
+                        backgroundColor: 'rgba(255, 255, 255, 0.15)',
+                        borderRadius: '12px',
+                        padding: '12px',
+                        display: 'flex',
+                        alignItems: 'center',
+                        justifyContent: 'center',
+                      }}>
+                        <AlertOutlined style={{ fontSize: '32px', color: '#fff' }} />
+                      </div>
+                      <div style={{ flex: 1 }}>
+                        <h3 style={{
+                          margin: 0,
+                          color: '#fff',
+                          fontSize: '18px',
+                          fontWeight: 'bold',
+                          marginBottom: '6px',
+                        }}>
+                          Vigilância em Saúde
+                        </h3>
+                        <p style={{
+                          margin: 0,
+                          color: 'rgba(255, 255, 255, 0.9)',
+                          fontSize: '13px',
+                          lineHeight: '1.4',
+                        }}>
+                          Acompanhe dados epidemiológicos de dengue, chikungunya e outras doenças
+                        </p>
+                      </div>
+                      <RightOutlined style={{ color: '#fff', fontSize: '16px' }} />
+                    </div>
                   </Card>
 
                   {/* Rodapé com informações da fonte de dados */}

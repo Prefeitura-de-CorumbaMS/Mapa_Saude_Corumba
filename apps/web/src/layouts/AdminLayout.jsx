@@ -15,6 +15,7 @@ import {
   MenuFoldOutlined,
   MenuUnfoldOutlined,
   PictureOutlined,
+  UploadOutlined,
 } from '@ant-design/icons'
 import { logout } from '../store/slices/authSlice'
 
@@ -55,6 +56,7 @@ export default function AdminLayout() {
     { key: '/admin/especialidades', icon: <TeamOutlined />, label: 'Especialidades' },
     { key: '/admin/icones', icon: <PictureOutlined />, label: 'Ícones' },
     { key: '/admin/bairros', icon: <EnvironmentOutlined />, label: 'Bairros' },
+    // { key: '/admin/vigilancia-importacao', icon: <UploadOutlined />, label: 'Importar Vigilância' },
     ...(isSuperadmin ? [
       { key: '/admin/users', icon: <UserOutlined />, label: 'Usuários' },
       { key: '/admin/audit', icon: <AuditOutlined />, label: 'Auditoria' },
