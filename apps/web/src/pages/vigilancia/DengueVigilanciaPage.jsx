@@ -65,22 +65,13 @@ export default function DengueVigilanciaPage() {
   // Definir a SE selecionada automaticamente (última disponível)
   useEffect(() => {
     if (dadosAno?.data) {
-      const sesSet = new Set();
-
-      // Adicionar SEs da tabela agregada
+      // Usar APENAS as SEs da tabela VIGILANCIA_Dengue_SE (dados oficiais)
+      // Ignora casos "órfãos" sem SE correspondente na tabela principal
       if (dadosAno.data.semanas && dadosAno.data.semanas.length > 0) {
-        dadosAno.data.semanas.forEach(s => sesSet.add(s.semana_epidemiologica));
-      }
+        const ses = dadosAno.data.semanas
+          .map(s => s.semana_epidemiologica)
+          .sort((a, b) => b - a); // Ordem decrescente (mais recente primeiro)
 
-      // Adicionar SEs da tabela de casos individuais
-      if (dadosAno.data.casos && dadosAno.data.casos.length > 0) {
-        dadosAno.data.casos.forEach(c => sesSet.add(c.semana_epidemiologica));
-      }
-
-      // Converter para array e ordenar (maior primeiro)
-      const ses = Array.from(sesSet).sort((a, b) => b - a);
-
-      if (ses.length > 0) {
         setSEsDisponiveis(ses);
 
         // Se não há SE selecionada, selecionar a última
