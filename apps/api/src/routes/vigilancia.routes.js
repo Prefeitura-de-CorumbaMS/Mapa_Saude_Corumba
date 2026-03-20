@@ -166,6 +166,7 @@ router.get('/dengue/perfil', async (req, res) => {
       });
     }
 
+    // Primeiro, tentar buscar dados agregados
     const perfil = await prisma.vIGILANCIA_Dengue_Perfil.findMany({
       where: {
         ano: parseInt(ano),
@@ -173,7 +174,69 @@ router.get('/dengue/perfil', async (req, res) => {
       },
     });
 
-    // Agregar por faixa etária
+    // Se não houver dados agregados, calcular a partir dos casos individuais
+    if (perfil.length === 0) {
+      const casos = await prisma.vIGILANCIA_Dengue_Caso.findMany({
+        where: {
+          ano: parseInt(ano),
+          semana_epidemiologica: {
+            lte: parseInt(se),
+          },
+        },
+        select: {
+          sexo: true,
+          data_nascimento: true,
+        },
+      });
+
+      // Função para calcular faixa etária
+      const getFaixaEtaria = (dataNascimento) => {
+        if (!dataNascimento) return 'Não informado';
+
+        const idade = Math.floor((new Date() - new Date(dataNascimento)) / (365.25 * 24 * 60 * 60 * 1000));
+
+        if (idade < 2) return '< 2 anos';
+        if (idade <= 4) return '2 a 4';
+        if (idade <= 9) return '5 a 9';
+        if (idade <= 19) return '10 a 19';
+        if (idade <= 29) return '20 a 29';
+        if (idade <= 39) return '30 a 39';
+        if (idade <= 49) return '40 a 49';
+        if (idade <= 59) return '50 a 59';
+        return '60+';
+      };
+
+      // Agregar por faixa etária a partir dos casos
+      const faixaEtariaMap = new Map();
+      casos.forEach(caso => {
+        const faixa = getFaixaEtaria(caso.data_nascimento);
+        faixaEtariaMap.set(faixa, (faixaEtariaMap.get(faixa) || 0) + 1);
+      });
+
+      // Agregar por sexo a partir dos casos
+      let feminino = 0;
+      let masculino = 0;
+      casos.forEach(caso => {
+        if (caso.sexo === 'F') feminino++;
+        if (caso.sexo === 'M') masculino++;
+      });
+
+      return res.json({
+        success: true,
+        data: {
+          faixa_etaria: {
+            labels: Array.from(faixaEtariaMap.keys()),
+            valores: Array.from(faixaEtariaMap.values()),
+          },
+          sexo: {
+            feminino,
+            masculino,
+          },
+        },
+      });
+    }
+
+    // Se houver dados agregados, usar eles
     const faixaEtariaMap = new Map();
     perfil.forEach((p) => {
       const atual = faixaEtariaMap.get(p.faixa_etaria) || 0;
