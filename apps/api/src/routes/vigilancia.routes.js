@@ -1126,24 +1126,40 @@ router.get('/dengue/casos/se', async (req, res) => {
       });
     }
 
-    // Contar casos APENAS da SE específica (não acumulado)
-    const casosDaSE = await prisma.vIGILANCIA_Dengue_Caso.count({
+    // Buscar KPIs oficiais da tabela agregada vigilancia_dengue_se
+    const dadosSE = await prisma.vIGILANCIA_Dengue_SE.findFirst({
       where: {
         ano: parseInt(ano),
         semana_epidemiologica: parseInt(se),
       },
     });
 
-    // Também calcular acumulado até a SE (para série temporal)
-    const casosAcumulados = await prisma.vIGILANCIA_Dengue_Caso.count({
-      where: {
-        ano: parseInt(ano),
-        semana_epidemiologica: {
-          lte: parseInt(se),
+    // Se não encontrar dados agregados, retornar zeros
+    if (!dadosSE) {
+      return res.json({
+        success: true,
+        data: {
+          ano: parseInt(ano),
+          semana_epidemiologica: parseInt(se),
+          periodo: `SE ${String(se).padStart(2, '0')}/${ano}`,
+          kpis: {
+            casos_notificados: 0,
+            casos_confirmados: 0,
+            sorotipo_tipo1: 0,
+            sorotipo_tipo2: 0,
+            sorotipo_tipo3: 0,
+            sorotipo_tipo4: 0,
+            isolamentos_virais: 0,
+            obitos: 0,
+          },
+          fonte: 'Dados Oficiais (vigilancia_dengue_se)',
+          data_publicacao: new Date(),
+          observacoes: 'Sem dados agregados para esta SE',
         },
-      },
-    });
+      });
+    }
 
+    // Retornar dados da tabela agregada
     res.json({
       success: true,
       data: {
@@ -1151,19 +1167,18 @@ router.get('/dengue/casos/se', async (req, res) => {
         semana_epidemiologica: parseInt(se),
         periodo: `SE ${String(se).padStart(2, '0')}/${ano}`,
         kpis: {
-          casos_notificados: casosDaSE, // Casos apenas desta SE
-          casos_confirmados: casosDaSE, // Casos do laboratório são confirmados
-          sorotipo_tipo1: 0,
-          sorotipo_tipo2: 0,
-          sorotipo_tipo3: 0,
-          sorotipo_tipo4: 0,
-          isolamentos_virais: 0,
-          obitos: 0,
+          casos_notificados: dadosSE.casos_notificados,
+          casos_confirmados: dadosSE.casos_confirmados,
+          sorotipo_tipo1: dadosSE.sorotipo_tipo1,
+          sorotipo_tipo2: dadosSE.sorotipo_tipo2,
+          sorotipo_tipo3: dadosSE.sorotipo_tipo3,
+          sorotipo_tipo4: dadosSE.sorotipo_tipo4,
+          isolamentos_virais: dadosSE.isolamentos_virais,
+          obitos: dadosSE.obitos,
         },
-        acumulado: casosAcumulados, // Total acumulado para referência
-        fonte: 'Casos Individuais',
-        data_publicacao: new Date(),
-        observacoes: `Casos da SE ${se} (não acumulado). Total acumulado até SE ${se}: ${casosAcumulados}`,
+        fonte: dadosSE.fonte || 'Dados Oficiais (vigilancia_dengue_se)',
+        data_publicacao: dadosSE.data_publicacao || new Date(),
+        observacoes: dadosSE.observacoes,
       },
     });
   } catch (error) {
