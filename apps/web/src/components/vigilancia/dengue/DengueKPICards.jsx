@@ -68,7 +68,7 @@ export default function DengueKPICards({ data }) {
   ];
 
   return (
-    <Row gutter={[16, 16]} justify="center" style={{ marginBottom: '32px' }}>
+    <Row gutter={[16, 16]} justify="center" style={{ margin: '0 8px 24px 8px' }}>
       {cards.map((card, index) => (
         <Col xs={24} sm={12} md={12} lg={Math.floor(24 / 5)} xl={Math.floor(24 / 5)} key={index}>
           <Badge.Ribbon
@@ -84,11 +84,13 @@ export default function DengueKPICards({ data }) {
                 height: '180px',
                 boxShadow: '0 1px 3px 0 rgba(0, 0, 0, 0.1)',
               }}
-              bodyStyle={{
-                padding: '20px',
-                height: '100%',
-                display: 'flex',
-                flexDirection: 'column',
+              styles={{
+                body: {
+                  padding: '20px',
+                  height: '100%',
+                  display: 'flex',
+                  flexDirection: 'column',
+                }
               }}
             >
               <div style={{

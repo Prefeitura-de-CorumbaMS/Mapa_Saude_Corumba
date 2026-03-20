@@ -38,13 +38,13 @@ export default function DengueBairrosNotif({ bairrosData }) {
 
   return (
     <Card style={{
-      marginBottom: '24px',
+      margin: '0 8px 16px 8px',
       border: '1px solid #E2E8F0',
       borderRadius: '8px',
       boxShadow: '0 1px 3px 0 rgba(0, 0, 0, 0.1), 0 1px 2px 0 rgba(0, 0, 0, 0.06)',
     }}>
       <h2 style={{
-        fontSize: '18px',
+        fontSize: '16px',
         fontWeight: 'bold',
         color: '#1F3473',
         marginBottom: '4px',

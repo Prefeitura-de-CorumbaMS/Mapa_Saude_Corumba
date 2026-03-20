@@ -11,21 +11,20 @@ export default function DengueHeader({ data }) {
       style={{
         background: 'linear-gradient(135deg, #1F3473 0%, #2a4a9e 100%)',
         border: 'none',
-        marginBottom: '24px',
+        marginBottom: '16px',
+        margin: '0 8px 16px 8px',
       }}
+      styles={{ body: { padding: '16px' } }}
     >
       <div style={{
         display: 'flex',
-        flexDirection: 'row',
-        alignItems: 'center',
-        justifyContent: 'space-between',
+        flexDirection: 'column',
         gap: '16px',
-        flexWrap: 'wrap',
       }}>
         <div>
           <p style={{
             color: '#40A1E6',
-            fontSize: '12px',
+            fontSize: '11px',
             fontWeight: '600',
             textTransform: 'uppercase',
             letterSpacing: '0.5px',
@@ -35,7 +34,7 @@ export default function DengueHeader({ data }) {
           </p>
           <h1 style={{
             color: 'white',
-            fontSize: '28px',
+            fontSize: '20px',
             fontWeight: 'bold',
             margin: '8px 0 4px 0',
           }}>
@@ -43,47 +42,40 @@ export default function DengueHeader({ data }) {
           </h1>
           <p style={{
             color: '#a5d6ff',
-            fontSize: '13px',
+            fontSize: '12px',
             margin: 0,
           }}>
             Fonte: {data.fonte} · {data.periodo}
           </p>
         </div>
-        <div style={{ textAlign: 'right' }}>
+        <div style={{ textAlign: 'left' }}>
           <span style={{
             background: '#40A1E6',
             color: 'white',
-            fontSize: '13px',
+            fontSize: '12px',
             fontWeight: 'bold',
-            padding: '8px 16px',
-            borderRadius: '20px',
+            padding: '6px 12px',
+            borderRadius: '16px',
             display: 'inline-block',
           }}>
-            Boletim Epidemiológico · SE {data.semana_epidemiologica.toString().padStart(2, '0')}
+            Boletim · SE {data.semana_epidemiologica.toString().padStart(2, '0')}
           </span>
           {periodo && (
             <p style={{
               color: '#40A1E6',
-              fontSize: '12px',
+              fontSize: '11px',
               fontWeight: '600',
-              margin: '8px 0 4px 0',
+              margin: '6px 0 4px 0',
             }}>
               📆 {periodo}
             </p>
           )}
           <p style={{
             color: '#a5d6ff',
-            fontSize: '11px',
+            fontSize: '10px',
             margin: '4px 0 0 0',
           }}>
-            Secretaria Municipal de Saúde
-          </p>
-          <p style={{
-            color: '#a5d6ff',
-            fontSize: '11px',
-            margin: '2px 0 0 0',
-          }}>
-            Prefeitura de Corumbá
+            Secretaria Municipal de Saúde · Prefeitura de Corumbá
           </p>
         </div>
       </div>

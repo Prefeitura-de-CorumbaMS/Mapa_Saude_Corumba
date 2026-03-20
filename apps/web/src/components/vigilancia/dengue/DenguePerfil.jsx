@@ -75,12 +75,12 @@ export default function DenguePerfil({ perfilData }) {
   );
 
   return (
-    <div style={{ marginBottom: '32px' }}>
+    <div style={{ margin: '0 8px 24px 8px' }}>
       <h2 style={{
-        fontSize: '18px',
+        fontSize: '16px',
         fontWeight: 'bold',
         color: '#1F3473',
-        marginBottom: '16px',
+        marginBottom: '12px',
         display: 'flex',
         alignItems: 'center',
         gap: '8px',

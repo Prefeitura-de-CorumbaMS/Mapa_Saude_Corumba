@@ -95,12 +95,12 @@ export default function DengueSerieHistorica({ serieData }) {
   const seConf = serieData.find(item => item.confirmados === picoConf)?.semana;
 
   return (
-    <div style={{ marginBottom: '32px' }}>
+    <div style={{ margin: '0 8px 24px 8px' }}>
       <h2 style={{
-        fontSize: '18px',
+        fontSize: '16px',
         fontWeight: 'bold',
         color: '#1F3473',
-        marginBottom: '16px',
+        marginBottom: '12px',
         display: 'flex',
         alignItems: 'center',
         gap: '8px',

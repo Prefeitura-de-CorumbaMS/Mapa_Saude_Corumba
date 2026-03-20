@@ -182,7 +182,7 @@ export default function DengueVigilanciaPage() {
         {sesDisponiveis.length > 0 && (
           <Card
             style={{
-              margin: '0 16px 16px 16px',
+              margin: '0 8px 16px 8px',
               borderRadius: '12px',
               background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
               border: 'none',
@@ -255,51 +255,51 @@ export default function DengueVigilanciaPage() {
               )}
 
               {/* Seletor de fonte de dados */}
-              <div style={{ marginTop: '12px', padding: '12px', background: 'rgba(255,255,255,0.1)', borderRadius: '8px' }}>
+              <div style={{ marginTop: '12px', padding: '10px', background: 'rgba(255,255,255,0.1)', borderRadius: '8px' }}>
                 <Space direction="vertical" style={{ width: '100%' }} size="small">
-                  <Text style={{ color: '#fff', fontSize: '12px', fontWeight: '500' }}>
+                  <Text style={{ color: '#fff', fontSize: '11px', fontWeight: '500' }}>
                     📊 Fonte de dados:
                   </Text>
-                  <Space style={{ width: '100%' }} size="middle">
+                  <div style={{ display: 'flex', gap: '8px', width: '100%' }}>
                     <button
                       onClick={() => setUsarCasos(false)}
                       style={{
                         flex: 1,
-                        padding: '8px 16px',
+                        padding: '8px 12px',
                         border: 'none',
                         borderRadius: '8px',
                         cursor: 'pointer',
                         fontWeight: '500',
-                        fontSize: '13px',
+                        fontSize: '12px',
                         transition: 'all 0.3s',
                         background: !usarCasos ? 'linear-gradient(135deg, #3b82f6 0%, #1d4ed8 100%)' : 'rgba(255,255,255,0.8)',
                         color: !usarCasos ? '#fff' : '#374151',
                         boxShadow: !usarCasos ? '0 4px 12px rgba(59, 130, 246, 0.4)' : '0 2px 4px rgba(0,0,0,0.1)',
-                        transform: !usarCasos ? 'scale(1.02)' : 'scale(1)',
+                        whiteSpace: 'nowrap',
                       }}
                     >
-                      📋 Dados Agregados
+                      📋 Agregados
                     </button>
                     <button
                       onClick={() => setUsarCasos(true)}
                       style={{
                         flex: 1,
-                        padding: '8px 16px',
+                        padding: '8px 12px',
                         border: 'none',
                         borderRadius: '8px',
                         cursor: 'pointer',
                         fontWeight: '500',
-                        fontSize: '13px',
+                        fontSize: '12px',
                         transition: 'all 0.3s',
                         background: usarCasos ? 'linear-gradient(135deg, #10b981 0%, #059669 100%)' : 'rgba(255,255,255,0.8)',
                         color: usarCasos ? '#fff' : '#374151',
                         boxShadow: usarCasos ? '0 4px 12px rgba(16, 185, 129, 0.4)' : '0 2px 4px rgba(0,0,0,0.1)',
-                        transform: usarCasos ? 'scale(1.02)' : 'scale(1)',
+                        whiteSpace: 'nowrap',
                       }}
                     >
-                      👤 Casos Individuais
+                      👤 Individual
                     </button>
-                  </Space>
+                  </div>
                 </Space>
               </div>
 

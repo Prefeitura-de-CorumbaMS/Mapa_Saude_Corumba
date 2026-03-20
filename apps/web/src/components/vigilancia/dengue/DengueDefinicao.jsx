@@ -24,7 +24,7 @@ export default function DengueDefinicao() {
       style={{
         backgroundColor: '#FEF3C7',
         border: '1px solid #FCD34D',
-        marginBottom: '24px',
+        margin: '0 8px 16px 8px',
       }}
     />
   );

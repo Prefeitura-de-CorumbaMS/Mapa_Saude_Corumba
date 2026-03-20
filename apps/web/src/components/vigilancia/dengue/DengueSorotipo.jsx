@@ -11,7 +11,7 @@ export default function DengueSorotipo({ data }) {
       style={{
         background: 'linear-gradient(135deg, #1F3473 0%, #40A1E6 100%)',
         border: 'none',
-        marginBottom: '24px',
+        margin: '0 8px 16px 8px',
       }}
     >
       <div style={{
