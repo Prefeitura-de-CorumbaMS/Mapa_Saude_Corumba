@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { Spin, Alert, Select, Card, Space, Typography, Tooltip, Button } from 'antd';
+import { Spin, Alert, Select, Card, Space, Typography, Tooltip, Segmented } from 'antd';
 import { InfoCircleOutlined } from '@ant-design/icons';
 import {
   Chart as ChartJS,
@@ -57,7 +57,7 @@ export default function DengueVigilanciaPage() {
   const anoAtual = 2026;
   const [seSelecionada, setSESelecionada] = useState(null);
   const [sesDisponiveis, setSEsDisponiveis] = useState([]);
-  const [usarCasos, setUsarCasos] = useState(true); // Toggle para usar dados de casos individuais
+  const [usarCasos, setUsarCasos] = useState(false); // Inicia com dados agregados
 
   // Buscar todas as SEs do ano para preencher o seletor
   const { data: dadosAno, isLoading: loadingAno } = useGetDengueByAnoQuery({ ano: anoAtual });
@@ -247,24 +247,30 @@ export default function DengueVigilanciaPage() {
                 </div>
               )}
 
-              {/* Toggle de fonte de dados */}
+              {/* Seletor de fonte de dados */}
               <div style={{ marginTop: '12px', padding: '12px', background: 'rgba(255,255,255,0.1)', borderRadius: '8px' }}>
-                <Space align="center">
+                <Space direction="vertical" style={{ width: '100%' }} size="small">
                   <Text style={{ color: '#fff', fontSize: '12px', fontWeight: '500' }}>
                     📊 Fonte de dados:
                   </Text>
-                  <Button
-                    size="small"
-                    type={usarCasos ? 'primary' : 'default'}
-                    onClick={() => setUsarCasos(!usarCasos)}
+                  <Segmented
+                    value={usarCasos ? 'casos' : 'agregados'}
+                    onChange={(value) => setUsarCasos(value === 'casos')}
+                    options={[
+                      {
+                        label: '📋 Dados Agregados',
+                        value: 'agregados',
+                      },
+                      {
+                        label: '👤 Casos Individuais',
+                        value: 'casos',
+                      },
+                    ]}
+                    block
                     style={{
-                      background: usarCasos ? '#52c41a' : 'rgba(255,255,255,0.2)',
-                      borderColor: usarCasos ? '#52c41a' : 'rgba(255,255,255,0.3)',
-                      color: '#fff'
+                      background: 'rgba(255,255,255,0.9)',
                     }}
-                  >
-                    {usarCasos ? '✅ Casos Individuais' : '📋 Dados Agregados'}
-                  </Button>
+                  />
                 </Space>
               </div>
 
