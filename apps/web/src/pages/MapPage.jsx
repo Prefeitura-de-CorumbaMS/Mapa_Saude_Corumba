@@ -1259,8 +1259,8 @@ export default function MapPage() {
                     )}
                   </Card>
 
-                  {/* Card Vigilância em Saúde */}
-                  <Card
+                  {/* Card Vigilância em Saúde - TEMPORARIAMENTE OCULTO */}
+                  {/* <Card
                     hoverable
                     onClick={() => navigate('/vigilancia')}
                     style={{
@@ -1314,7 +1314,7 @@ export default function MapPage() {
                       </div>
                       <RightOutlined style={{ color: '#fff', fontSize: '16px' }} />
                     </div>
-                  </Card>
+                  </Card> */}
 
                   {/* Rodapé com informações da fonte de dados */}
                   <div style={{
