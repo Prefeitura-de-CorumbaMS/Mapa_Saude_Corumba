@@ -989,6 +989,8 @@ router.get('/dengue/casos/perfil', async (req, res) => {
 /**
  * GET /api/vigilancia/dengue/casos/bairros?ano=2026&se=9&tipo=notificados
  * Agrega casos individuais por bairro
+ * NOTA: Casos individuais são do laboratório, portanto todos são confirmados
+ * O parâmetro 'tipo' é mantido por compatibilidade mas retorna os mesmos dados
  */
 router.get('/dengue/casos/bairros', async (req, res) => {
   try {
@@ -1002,6 +1004,7 @@ router.get('/dengue/casos/bairros', async (req, res) => {
     }
 
     // Buscar casos até a SE informada
+    // Casos do laboratório são considerados confirmados
     const casos = await prisma.vIGILANCIA_Dengue_Caso.findMany({
       where: {
         ano: parseInt(ano),
