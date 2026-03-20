@@ -6,6 +6,14 @@ export default function DenguePerfil({ perfilData }) {
 
   const { faixa_etaria, sexo } = perfilData;
 
+  // Verificar se os dados estão completos
+  if (!faixa_etaria || !faixa_etaria.valores || faixa_etaria.valores.length === 0) {
+    return null;
+  }
+  if (!sexo || (sexo.feminino === undefined && sexo.masculino === undefined)) {
+    return null;
+  }
+
   const dadosFaixa = {
     labels: faixa_etaria.labels,
     datasets: [{
