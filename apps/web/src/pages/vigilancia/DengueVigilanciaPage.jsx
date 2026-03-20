@@ -253,24 +253,46 @@ export default function DengueVigilanciaPage() {
                   <Text style={{ color: '#fff', fontSize: '12px', fontWeight: '500' }}>
                     📊 Fonte de dados:
                   </Text>
-                  <Segmented
-                    value={usarCasos ? 'casos' : 'agregados'}
-                    onChange={(value) => setUsarCasos(value === 'casos')}
-                    options={[
-                      {
-                        label: '📋 Dados Agregados',
-                        value: 'agregados',
-                      },
-                      {
-                        label: '👤 Casos Individuais',
-                        value: 'casos',
-                      },
-                    ]}
-                    block
-                    style={{
-                      background: 'rgba(255,255,255,0.9)',
-                    }}
-                  />
+                  <Space style={{ width: '100%' }} size="middle">
+                    <button
+                      onClick={() => setUsarCasos(false)}
+                      style={{
+                        flex: 1,
+                        padding: '8px 16px',
+                        border: 'none',
+                        borderRadius: '8px',
+                        cursor: 'pointer',
+                        fontWeight: '500',
+                        fontSize: '13px',
+                        transition: 'all 0.3s',
+                        background: !usarCasos ? 'linear-gradient(135deg, #3b82f6 0%, #1d4ed8 100%)' : 'rgba(255,255,255,0.8)',
+                        color: !usarCasos ? '#fff' : '#374151',
+                        boxShadow: !usarCasos ? '0 4px 12px rgba(59, 130, 246, 0.4)' : '0 2px 4px rgba(0,0,0,0.1)',
+                        transform: !usarCasos ? 'scale(1.02)' : 'scale(1)',
+                      }}
+                    >
+                      📋 Dados Agregados
+                    </button>
+                    <button
+                      onClick={() => setUsarCasos(true)}
+                      style={{
+                        flex: 1,
+                        padding: '8px 16px',
+                        border: 'none',
+                        borderRadius: '8px',
+                        cursor: 'pointer',
+                        fontWeight: '500',
+                        fontSize: '13px',
+                        transition: 'all 0.3s',
+                        background: usarCasos ? 'linear-gradient(135deg, #10b981 0%, #059669 100%)' : 'rgba(255,255,255,0.8)',
+                        color: usarCasos ? '#fff' : '#374151',
+                        boxShadow: usarCasos ? '0 4px 12px rgba(16, 185, 129, 0.4)' : '0 2px 4px rgba(0,0,0,0.1)',
+                        transform: usarCasos ? 'scale(1.02)' : 'scale(1)',
+                      }}
+                    >
+                      👤 Casos Individuais
+                    </button>
+                  </Space>
                 </Space>
               </div>
 
