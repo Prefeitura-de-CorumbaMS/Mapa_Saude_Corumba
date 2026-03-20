@@ -11,14 +11,19 @@ import {
 const { Header, Sider, Content } = Layout;
 
 export default function VigilanciaLayout() {
-  const [collapsed, setCollapsed] = useState(false);
   const [isMobile, setIsMobile] = useState(false);
+  const [collapsed, setCollapsed] = useState(false);
   const navigate = useNavigate();
   const location = useLocation();
 
   useEffect(() => {
     const checkMobile = () => {
-      setIsMobile(window.innerWidth <= 768);
+      const mobile = window.innerWidth <= 768;
+      setIsMobile(mobile);
+      // Iniciar colapsado no mobile
+      if (mobile) {
+        setCollapsed(true);
+      }
     };
 
     checkMobile();
@@ -176,19 +181,34 @@ export default function VigilanciaLayout() {
           collapsible
           collapsed={collapsed}
           onCollapse={setCollapsed}
+          breakpoint="lg"
+          collapsedWidth={isMobile ? 0 : 80}
           width={250}
           style={{ background: '#fff' }}
+          trigger={null}
         >
           <Menu
             mode="inline"
             selectedKeys={[location.pathname]}
             items={menuItems}
-            onClick={({ key }) => key !== 'voltar' && navigate(key)}
+            onClick={({ key }) => {
+              if (key !== 'voltar') {
+                navigate(key);
+                // Fechar menu no mobile após navegar
+                if (isMobile) {
+                  setCollapsed(true);
+                }
+              }
+            }}
             style={{ height: '100%', borderRight: 0 }}
           />
         </Sider>
 
-        <Content style={{ padding: '24px', background: '#F1F5F9' }}>
+        <Content style={{
+          padding: isMobile ? '8px 0' : '24px',
+          background: '#F1F5F9',
+          minHeight: 'calc(100vh - 64px)',
+        }}>
           <Outlet />
         </Content>
       </Layout>
