@@ -442,6 +442,25 @@ export const apiSlice = createApi({
       }),
       invalidatesTags: ['Vigilancia'],
     }),
+
+    // Vigilância - Atualizar caso individual
+    updateDengueCaso: builder.mutation({
+      query: ({ id, ...data }) => ({
+        url: `/vigilancia/dengue/caso/${id}`,
+        method: 'PUT',
+        body: data,
+      }),
+      invalidatesTags: ['Vigilancia'],
+    }),
+
+    // Vigilância - Deletar caso individual
+    deleteDengueCaso: builder.mutation({
+      query: ({ id }) => ({
+        url: `/vigilancia/dengue/caso/${id}`,
+        method: 'DELETE',
+      }),
+      invalidatesTags: ['Vigilancia'],
+    }),
   }),
 })
 
@@ -497,4 +516,6 @@ export const {
   useDeleteDengueBairroMutation,
   useUpdateDengueSEMutation,
   useDeleteDengueSEMutation,
+  useUpdateDengueCasoMutation,
+  useDeleteDengueCasoMutation,
 } = apiSlice

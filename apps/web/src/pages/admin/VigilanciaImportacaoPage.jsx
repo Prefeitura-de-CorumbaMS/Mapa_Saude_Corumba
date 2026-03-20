@@ -26,8 +26,9 @@ import {
   TeamOutlined,
   LineChartOutlined,
   DeleteOutlined,
+  UserOutlined,
 } from '@ant-design/icons'
-import { parseNotificados, parsePerfil, parseKPIs, validarDados } from '../../utils/vigilanciaParser'
+import { parseNotificados, parsePerfil, parseKPIs, parseCasosIndividuais, validarDados } from '../../utils/vigilanciaParser'
 import { useImportarVigilanciaMutation } from '../../store/slices/apiSlice'
 
 const { TextArea } = Input
@@ -59,6 +60,8 @@ export default function VigilanciaImportacaoPage() {
         parsed = parsePerfil(dadosBrutos)
       } else if (tipo === 'kpis') {
         parsed = parseKPIs(dadosBrutos)
+      } else if (tipo === 'casos') {
+        parsed = parseCasosIndividuais(dadosBrutos, ano)
       }
 
       // Validar dados parseados
@@ -111,6 +114,8 @@ export default function VigilanciaImportacaoPage() {
         mensagemSucesso = `Importação concluída! ${result.perfis_inseridos} registros de perfil importados.`
       } else if (tipo === 'kpis') {
         mensagemSucesso = `Importação concluída! ${result.semanas_atualizadas} SEs atualizadas.`
+      } else if (tipo === 'casos') {
+        mensagemSucesso = `Importação concluída! ${result.casos_inseridos} casos individuais importados.`
       }
 
       message.success(mensagemSucesso)
@@ -308,6 +313,18 @@ export default function VigilanciaImportacaoPage() {
       { title: 'Tipo 4', dataIndex: 'tipo4', key: 'tipo4', width: 80 },
       { title: 'Isolamentos', dataIndex: 'isolamentos', key: 'isolamentos', width: 100 },
       { title: 'Óbitos', dataIndex: 'obitos', key: 'obitos', width: 80 },
+    ],
+    casos: [
+      { title: 'Nº', dataIndex: 'numero_caso', key: 'numero_caso', width: 60 },
+      { title: 'SE', dataIndex: 'semana_epidemiologica', key: 'semana_epidemiologica', width: 60 },
+      { title: 'Paciente', dataIndex: 'paciente', key: 'paciente', width: 200 },
+      { title: 'DN', dataIndex: 'data_nascimento', key: 'data_nascimento', width: 100, render: (val) => val ? new Date(val).toLocaleDateString('pt-BR') : '-' },
+      { title: 'Sexo', dataIndex: 'sexo', key: 'sexo', width: 60 },
+      { title: 'Bairro', dataIndex: 'bairro', key: 'bairro', width: 150 },
+      { title: 'Unidade', dataIndex: 'unidade', key: 'unidade', width: 200 },
+      { title: 'SINAN', dataIndex: 'sinan', key: 'sinan', width: 100 },
+      { title: 'Notificado', dataIndex: 'data_notificacao', key: 'data_notificacao', width: 100, render: (val) => val ? new Date(val).toLocaleDateString('pt-BR') : '-' },
+      { title: 'Obs.', dataIndex: 'observacoes', key: 'observacoes', width: 200, ellipsis: true },
     ],
   }
 
@@ -541,6 +558,79 @@ export default function VigilanciaImportacaoPage() {
                       <Alert
                         message="Dica"
                         description="Selecione as células no Excel (incluindo cabeçalhos) e cole diretamente aqui."
+                        type="info"
+                        showIcon
+                        icon={<InfoCircleOutlined />}
+                        style={{ marginTop: 8, marginBottom: 12 }}
+                      />
+
+                      <TextArea
+                        rows={15}
+                        value={dadosBrutos}
+                        onChange={(e) => setDadosBrutos(e.target.value)}
+                        placeholder="Cole aqui os dados copiados do Excel..."
+                        style={{
+                          fontFamily: 'monospace',
+                          fontSize: '12px',
+                        }}
+                      />
+                    </div>
+
+                    {/* Botões */}
+                    <div style={{ display: 'flex', gap: '12px', justifyContent: 'flex-end' }}>
+                      <Button onClick={handleLimpar}>Limpar</Button>
+                      <Button
+                        type="primary"
+                        icon={<EyeOutlined />}
+                        onClick={handleAnalisar}
+                        disabled={!dadosBrutos.trim()}
+                      >
+                        Analisar Dados
+                      </Button>
+                    </div>
+                  </Space>
+                ),
+              },
+              {
+                key: 'casos',
+                label: (
+                  <span>
+                    <UserOutlined /> Casos Individuais
+                  </span>
+                ),
+                children: (
+                  <Space direction="vertical" size="large" style={{ width: '100%' }}>
+                    <Alert
+                      message="Importar Casos Individuais"
+                      description="Cole aqui os registros individuais do laboratório. Cada linha deve conter: Nº, UNIDADE, SINAN, NOTIFICADO, SINTOMAS, PACIENTE, DN, SEXO, ENDEREÇO, BAIRRO, SEMANA, Obs."
+                      type="info"
+                      showIcon
+                      style={{ marginBottom: 16 }}
+                    />
+
+                    {/* Seleção de ano */}
+                    <div>
+                      <Text strong>Ano:</Text>
+                      <br />
+                      <InputNumber
+                        min={2020}
+                        max={2030}
+                        value={ano}
+                        onChange={(val) => setAno(val)}
+                        style={{ width: 100 }}
+                      />
+                    </div>
+
+                    <Divider />
+
+                    {/* Área de entrada */}
+                    <div>
+                      <Text strong>
+                        <FileTextOutlined /> Cole os dados aqui (Ctrl+C/Ctrl+V do Excel):
+                      </Text>
+                      <Alert
+                        message="Dica"
+                        description="Selecione todas as linhas de casos no Excel (incluindo cabeçalhos) e cole diretamente aqui. Você poderá revisar e editar antes de salvar."
                         type="info"
                         showIcon
                         icon={<InfoCircleOutlined />}

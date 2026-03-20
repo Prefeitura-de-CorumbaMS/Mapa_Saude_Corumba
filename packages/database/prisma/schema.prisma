@@ -439,3 +439,42 @@ model VIGILANCIA_Dengue_Bairro {
   @@index([dengue_se_id])
   @@map("vigilancia_dengue_bairro")
 }
+
+// DENGUE - Casos Individuais (Registro do Laboratório)
+model VIGILANCIA_Dengue_Caso {
+  id                    Int      @id @default(autoincrement())
+  ano                   Int
+  numero_caso           String?  @db.VarChar(20)      // Nº do caso
+
+  // Dados da notificação
+  unidade               String?  @db.VarChar(200)     // Unidade de saúde
+  sinan                 String?  @db.VarChar(50)      // Número SINAN
+  data_notificacao      DateTime?                     // NOTIFICADO
+  data_sintomas         DateTime?                     // SINTOMAS
+
+  // Dados do paciente
+  paciente              String   @db.VarChar(200)     // Nome do paciente
+  data_nascimento       DateTime?                     // DN
+  sexo                  String?  @db.VarChar(1)       // F ou M
+
+  // Localização
+  endereco              String?  @db.VarChar(500)     // Endereço completo
+  bairro                String?  @db.VarChar(100)     // Bairro
+
+  // Classificação temporal
+  semana_epidemiologica Int                           // SEMANA
+
+  // Observações
+  observacoes           String?  @db.Text             // Obs.
+
+  // Metadados
+  created_at            DateTime @default(now())
+  updated_at            DateTime @updatedAt
+
+  @@index([ano])
+  @@index([semana_epidemiologica])
+  @@index([ano, semana_epidemiologica])
+  @@index([bairro])
+  @@index([data_notificacao])
+  @@map("vigilancia_dengue_caso")
+}

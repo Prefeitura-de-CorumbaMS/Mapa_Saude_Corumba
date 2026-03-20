@@ -296,10 +296,10 @@ router.post('/dengue/importar', authenticate, requireAdmin, asyncHandler(async (
     });
   }
 
-  if (!['notificados', 'perfil', 'kpis'].includes(tipo)) {
+  if (!['notificados', 'perfil', 'kpis', 'casos'].includes(tipo)) {
     return res.status(400).json({
       success: false,
-      error: 'Tipo inválido. Valores aceitos: notificados, perfil, kpis',
+      error: 'Tipo inválido. Valores aceitos: notificados, perfil, kpis, casos',
     });
   }
 
@@ -328,6 +328,8 @@ router.post('/dengue/importar', authenticate, requireAdmin, asyncHandler(async (
       resultado = await importarPerfil(ano, dados, userId);
     } else if (tipo === 'kpis') {
       resultado = await importarKPIs(ano, dados, userId);
+    } else if (tipo === 'casos') {
+      resultado = await importarCasosIndividuais(ano, dados, userId);
     }
 
     // Log de auditoria (simplificado - pode ser expandido)
@@ -552,6 +554,40 @@ async function importarKPIs(ano, dados, userId) {
 }
 
 /**
+ * Importa casos individuais (registros do laboratório)
+ */
+async function importarCasosIndividuais(ano, dados, userId) {
+  return await prisma.$transaction(async (tx) => {
+    let casosInseridos = 0;
+
+    for (const caso of dados) {
+      await tx.vIGILANCIA_Dengue_Caso.create({
+        data: {
+          ano,
+          numero_caso: caso.numero_caso || null,
+          unidade: caso.unidade || null,
+          sinan: caso.sinan || null,
+          data_notificacao: caso.data_notificacao || null,
+          data_sintomas: caso.data_sintomas || null,
+          paciente: caso.paciente,
+          data_nascimento: caso.data_nascimento || null,
+          sexo: caso.sexo || null,
+          endereco: caso.endereco || null,
+          bairro: caso.bairro || null,
+          semana_epidemiologica: caso.semana_epidemiologica,
+          observacoes: caso.observacoes || null,
+        },
+      });
+      casosInseridos++;
+    }
+
+    return {
+      casos_inseridos: casosInseridos,
+    };
+  });
+}
+
+/**
  * GET /api/vigilancia/dengue/ano?ano=2026
  * Retorna TODOS os dados de um ano (SEs e Bairros)
  * Para gerenciamento e relatórios
@@ -588,15 +624,28 @@ router.get('/dengue/ano', async (req, res) => {
       ],
     });
 
+    // Buscar todos os casos individuais do ano
+    const casos = await prisma.vIGILANCIA_Dengue_Caso.findMany({
+      where: {
+        ano: parseInt(ano),
+      },
+      orderBy: [
+        { semana_epidemiologica: 'asc' },
+        { paciente: 'asc' },
+      ],
+    });
+
     res.json({
       success: true,
       data: {
         ano: parseInt(ano),
         semanas,
         bairros,
+        casos,
         totais: {
           total_semanas: semanas.length,
           total_registros_bairros: bairros.length,
+          total_casos: casos.length,
         },
       },
     });
@@ -762,6 +811,92 @@ router.delete('/dengue/bairro/:id', authenticate, requireAdmin, asyncHandler(asy
   res.json({
     success: true,
     message: 'Registro deletado com sucesso',
+  });
+}));
+
+/**
+ * PUT /api/vigilancia/dengue/caso/:id
+ * Atualiza dados de um caso individual
+ */
+router.put('/dengue/caso/:id', authenticate, requireAdmin, asyncHandler(async (req, res) => {
+  const { id } = req.params;
+  const {
+    numero_caso,
+    unidade,
+    sinan,
+    data_notificacao,
+    data_sintomas,
+    paciente,
+    data_nascimento,
+    sexo,
+    endereco,
+    bairro,
+    semana_epidemiologica,
+    observacoes,
+  } = req.body;
+
+  const atualizado = await prisma.vIGILANCIA_Dengue_Caso.update({
+    where: { id: parseInt(id) },
+    data: {
+      numero_caso,
+      unidade,
+      sinan,
+      data_notificacao: data_notificacao ? new Date(data_notificacao) : null,
+      data_sintomas: data_sintomas ? new Date(data_sintomas) : null,
+      paciente,
+      data_nascimento: data_nascimento ? new Date(data_nascimento) : null,
+      sexo,
+      endereco,
+      bairro,
+      semana_epidemiologica: parseInt(semana_epidemiologica),
+      observacoes,
+      updated_at: new Date(),
+    },
+  });
+
+  logger.info('Caso individual atualizado', {
+    id,
+    paciente: atualizado.paciente,
+    user: req.user?.username,
+  });
+
+  res.json({
+    success: true,
+    data: atualizado,
+  });
+}));
+
+/**
+ * DELETE /api/vigilancia/dengue/caso/:id
+ * Deleta um caso individual
+ */
+router.delete('/dengue/caso/:id', authenticate, requireAdmin, asyncHandler(async (req, res) => {
+  const { id } = req.params;
+
+  const caso = await prisma.vIGILANCIA_Dengue_Caso.findUnique({
+    where: { id: parseInt(id) },
+  });
+
+  if (!caso) {
+    return res.status(404).json({
+      success: false,
+      error: 'Caso não encontrado',
+    });
+  }
+
+  await prisma.vIGILANCIA_Dengue_Caso.delete({
+    where: { id: parseInt(id) },
+  });
+
+  logger.info('Caso individual deletado', {
+    id,
+    paciente: caso.paciente,
+    user: req.user?.username,
+  });
+
+  res.json({
+    success: true,
+    message: 'Caso deletado com sucesso',
   });
 }));
 

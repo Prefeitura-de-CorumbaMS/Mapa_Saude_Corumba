@@ -341,15 +341,52 @@ export function validarDados(dadosParsed, tipo, bairrosCadastrados = []) {
     }
   }
 
+  if (tipo === 'casos') {
+    // Validar paciente obrigatório
+    const semPaciente = dadosParsed.filter(d => !d.paciente || d.paciente.trim() === '')
+    if (semPaciente.length > 0) {
+      erros.push(`${semPaciente.length} registros sem nome do paciente`)
+    }
+
+    // Validar SE
+    const seInvalida = dadosParsed.filter(d => !d.semana_epidemiologica || d.semana_epidemiologica < 1 || d.semana_epidemiologica > 53)
+    if (seInvalida.length > 0) {
+      erros.push(`${seInvalida.length} registros com semana epidemiológica inválida (deve estar entre 1 e 53)`)
+    }
+
+    // Validar sexo (aviso apenas)
+    const sexosInvalidos = dadosParsed.filter(d => d.sexo && d.sexo !== 'F' && d.sexo !== 'M')
+    if (sexosInvalidos.length > 0) {
+      avisos.push(`${sexosInvalidos.length} registros com sexo inválido (use F ou M)`)
+    }
+
+    // Validar bairro (aviso apenas)
+    const semBairro = dadosParsed.filter(d => !d.bairro || d.bairro.trim() === '')
+    if (semBairro.length > 0) {
+      avisos.push(`${semBairro.length} registros sem bairro informado`)
+    }
+  }
+
   const estatisticas = {
     total: dadosParsed.length,
     validos: dadosParsed.length - erros.length,
     invalidos: erros.length,
-    sesUnicas: [...new Set(dadosParsed.map(d => d.se))].length,
+  }
+
+  if (tipo === 'notificados' || tipo === 'perfil' || tipo === 'casos') {
+    if (dadosParsed.length > 0) {
+      const seField = tipo === 'casos' ? 'semana_epidemiologica' : 'se'
+      estatisticas.sesUnicas = [...new Set(dadosParsed.map(d => d[seField]))].length
+    }
   }
 
   if (tipo === 'notificados') {
     estatisticas.bairrosUnicos = [...new Set(dadosParsed.map(d => d.bairro))].length
+  }
+
+  if (tipo === 'casos') {
+    estatisticas.bairrosUnicos = [...new Set(dadosParsed.map(d => d.bairro).filter(b => b))].length
+    estatisticas.pacientesUnicos = [...new Set(dadosParsed.map(d => d.paciente))].length
   }
 
   return {
@@ -361,10 +398,119 @@ export function validarDados(dadosParsed, tipo, bairrosCadastrados = []) {
 }
 
 /**
+ * Parseia dados de casos individuais (registros do laboratório)
+ *
+ * Formato esperado (CSV/TSV):
+ * Nº | UNIDADE | SINAN | NOTIFICADO | SINTOMAS | PACIENTE | DN | SEXO | ENDEREÇO | BAIRRO | SEMANA | Obs.
+ * 1  | ESF São Barto | 123456 | 10/17/2026 | ... | DAYANA RAMOS | 15/4/1989 | F | RUA X | Centro | 2 | ...
+ *
+ * @param {string} textData - Texto colado (CSV/TSV)
+ * @param {number} ano - Ano dos casos
+ * @returns {Array} Array de objetos com dados dos casos individuais
+ */
+export function parseCasosIndividuais(textData, ano = 2026) {
+  try {
+    const linhas = textData.trim().split('\n')
+
+    if (linhas.length < 2) {
+      throw new Error('Dados insuficientes. Copie ao menos 2 linhas (cabeçalho + dados)')
+    }
+
+    // Detectar separador
+    const separador = linhas[0].includes('\t') ? '\t' : ','
+
+    // Primeira linha é cabeçalho (ignorar)
+    const resultado = []
+
+    // Helper para parsear data (aceita DD/MM/YYYY ou MM/DD/YYYY)
+    const parseData = (dataStr) => {
+      if (!dataStr || dataStr.trim() === '') return null
+
+      try {
+        const partes = dataStr.trim().split('/')
+        if (partes.length !== 3) return null
+
+        // Tentar formato DD/MM/YYYY primeiro
+        const dia = parseInt(partes[0])
+        const mes = parseInt(partes[1])
+        const anoData = parseInt(partes[2])
+
+        // Se dia > 12, definitivamente é DD/MM/YYYY
+        if (dia > 12) {
+          return new Date(anoData, mes - 1, dia)
+        }
+
+        // Se mês > 12, definitivamente é MM/DD/YYYY
+        if (mes > 12) {
+          return new Date(anoData, dia - 1, mes)
+        }
+
+        // Caso ambíguo, assumir DD/MM/YYYY (padrão brasileiro)
+        return new Date(anoData, mes - 1, dia)
+
+      } catch (e) {
+        return null
+      }
+    }
+
+    for (let i = 1; i < linhas.length; i++) {
+      const colunas = linhas[i].split(separador)
+
+      if (colunas.length < 10) continue // Precisa ter pelo menos os campos essenciais
+
+      const numero_caso = colunas[0]?.trim()
+      const unidade = colunas[1]?.trim()
+      const sinan = colunas[2]?.trim()
+      const data_notificacao = parseData(colunas[3])
+      const data_sintomas = parseData(colunas[4])
+      const paciente = colunas[5]?.trim()
+      const data_nascimento = parseData(colunas[6])
+      const sexo = colunas[7]?.trim().toUpperCase()
+      const endereco = colunas[8]?.trim()
+      const bairro = colunas[9]?.trim()
+      const semana = parseInt(colunas[10]?.trim()) || null
+      const observacoes = colunas[11]?.trim() || null
+
+      // Validações básicas
+      if (!paciente) continue // Paciente é obrigatório
+      if (!semana || semana < 1 || semana > 53) continue // SE obrigatória e válida
+
+      resultado.push({
+        ano,
+        numero_caso,
+        unidade,
+        sinan,
+        data_notificacao,
+        data_sintomas,
+        paciente,
+        data_nascimento,
+        sexo: sexo === 'F' || sexo === 'M' ? sexo : null,
+        endereco,
+        bairro,
+        semana_epidemiologica: semana,
+        observacoes,
+      })
+    }
+
+    if (resultado.length === 0) {
+      throw new Error('Nenhum registro válido encontrado. Verifique se os dados foram copiados corretamente.')
+    }
+
+    console.log('✅ Total de casos parseados:', resultado.length)
+    console.log('📊 Primeiros 3 casos:', resultado.slice(0, 3))
+
+    return resultado
+
+  } catch (error) {
+    throw new Error(`Erro ao parsear casos: ${error.message}`)
+  }
+}
+
+/**
  * Função auxiliar para detectar o tipo de dado automaticamente
  *
  * @param {string} textData - Texto colado
- * @returns {string} 'notificados', 'perfil', 'kpis' ou 'desconhecido'
+ * @returns {string} 'notificados', 'perfil', 'kpis', 'casos' ou 'desconhecido'
  */
 export function detectarTipoDado(textData) {
   const primeiraLinha = textData.trim().split('\n')[0]
@@ -379,6 +525,10 @@ export function detectarTipoDado(textData) {
 
   if (primeiraLinha.toLowerCase().includes('sorotipo') || primeiraLinha.toLowerCase().includes('isolamento')) {
     return 'kpis'
+  }
+
+  if (primeiraLinha.toLowerCase().includes('paciente') && primeiraLinha.toLowerCase().includes('sinan')) {
+    return 'casos'
   }
 
   return 'desconhecido'

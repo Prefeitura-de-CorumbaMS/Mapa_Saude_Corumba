@@ -40,6 +40,8 @@ import {
   useDeleteDengueBairroMutation,
   useUpdateDengueSEMutation,
   useDeleteDengueSEMutation,
+  useUpdateDengueCasoMutation,
+  useDeleteDengueCasoMutation,
 } from '../../store/slices/apiSlice'
 
 const { Option } = Select
@@ -50,7 +52,7 @@ export default function VigilanciaGerenciamentoPage() {
   const [filtroAno, setFiltroAno] = useState(2026)
   const [filtroSE, setFiltroSE] = useState(null)
   const [filtroBairro, setFiltroBairro] = useState('')
-  const [filtroTipo, setFiltroTipo] = useState('bairros') // 'bairros', 'se', 'perfil'
+  const [filtroTipo, setFiltroTipo] = useState('bairros') // 'bairros', 'se', 'perfil', 'casos'
   const [modoVisualizacao, setModoVisualizacao] = useState('tabela') // 'tabela' ou 'agrupado'
 
   // Dados
@@ -61,6 +63,8 @@ export default function VigilanciaGerenciamentoPage() {
   const [deleteBairro] = useDeleteDengueBairroMutation()
   const [updateSE] = useUpdateDengueSEMutation()
   const [deleteSE] = useDeleteDengueSEMutation()
+  const [updateCaso] = useUpdateDengueCasoMutation()
+  const [deleteCaso] = useDeleteDengueCasoMutation()
 
   // Estados locais
   const [dadosFiltrados, setDadosFiltrados] = useState([])
@@ -82,6 +86,8 @@ export default function VigilanciaGerenciamentoPage() {
       dados = dadosVigilancia.data.bairros
     } else if (filtroTipo === 'se' && dadosVigilancia.data.semanas) {
       dados = dadosVigilancia.data.semanas
+    } else if (filtroTipo === 'casos' && dadosVigilancia.data.casos) {
+      dados = dadosVigilancia.data.casos
     }
 
     // Aplicar filtros
@@ -91,7 +97,8 @@ export default function VigilanciaGerenciamentoPage() {
 
     if (filtroBairro) {
       dados = dados.filter(d =>
-        d.bairro?.toLowerCase().includes(filtroBairro.toLowerCase())
+        d.bairro?.toLowerCase().includes(filtroBairro.toLowerCase()) ||
+        d.paciente?.toLowerCase().includes(filtroBairro.toLowerCase())
       )
     }
 
@@ -101,12 +108,31 @@ export default function VigilanciaGerenciamentoPage() {
   // Edição com Modal
   const abrirModalEdicao = (record) => {
     setRegistroEditando(record)
-    form.setFieldsValue({
-      bairro: record.bairro,
-      semana_epidemiologica: record.semana_epidemiologica,
-      notificados: record.notificados,
-      confirmados: record.confirmados,
-    })
+
+    if (filtroTipo === 'casos') {
+      form.setFieldsValue({
+        numero_caso: record.numero_caso,
+        paciente: record.paciente,
+        semana_epidemiologica: record.semana_epidemiologica,
+        sexo: record.sexo,
+        bairro: record.bairro,
+        data_nascimento: record.data_nascimento ? new Date(record.data_nascimento).toISOString().split('T')[0] : null,
+        unidade: record.unidade,
+        sinan: record.sinan,
+        data_notificacao: record.data_notificacao ? new Date(record.data_notificacao).toISOString().split('T')[0] : null,
+        data_sintomas: record.data_sintomas ? new Date(record.data_sintomas).toISOString().split('T')[0] : null,
+        endereco: record.endereco,
+        observacoes: record.observacoes,
+      })
+    } else {
+      form.setFieldsValue({
+        bairro: record.bairro,
+        semana_epidemiologica: record.semana_epidemiologica,
+        notificados: record.notificados,
+        confirmados: record.confirmados,
+      })
+    }
+
     setModalEditarVisivel(true)
   }
 
@@ -122,16 +148,37 @@ export default function VigilanciaGerenciamentoPage() {
 
       if (!registroEditando) return
 
-      const dadosAtualizados = {
-        id: registroEditando.id,
-        bairro: values.bairro,
-        semana_epidemiologica: values.semana_epidemiologica,
-        notificados: values.notificados,
-        confirmados: values.confirmados,
-        ano: registroEditando.ano,
-      }
+      if (filtroTipo === 'casos') {
+        const dadosAtualizados = {
+          id: registroEditando.id,
+          numero_caso: values.numero_caso,
+          paciente: values.paciente,
+          semana_epidemiologica: values.semana_epidemiologica,
+          sexo: values.sexo,
+          bairro: values.bairro,
+          data_nascimento: values.data_nascimento,
+          unidade: values.unidade,
+          sinan: values.sinan,
+          data_notificacao: values.data_notificacao,
+          data_sintomas: values.data_sintomas,
+          endereco: values.endereco,
+          observacoes: values.observacoes,
+          ano: registroEditando.ano,
+        }
 
-      await updateBairro(dadosAtualizados).unwrap()
+        await updateCaso(dadosAtualizados).unwrap()
+      } else {
+        const dadosAtualizados = {
+          id: registroEditando.id,
+          bairro: values.bairro,
+          semana_epidemiologica: values.semana_epidemiologica,
+          notificados: values.notificados,
+          confirmados: values.confirmados,
+          ano: registroEditando.ano,
+        }
+
+        await updateBairro(dadosAtualizados).unwrap()
+      }
 
       message.success('Dados atualizados com sucesso!')
       fecharModalEdicao()
@@ -150,6 +197,8 @@ export default function VigilanciaGerenciamentoPage() {
     try {
       if (filtroTipo === 'bairros') {
         await deleteBairro({ id }).unwrap()
+      } else if (filtroTipo === 'casos') {
+        await deleteCaso({ id }).unwrap()
       } else {
         await deleteSE({ id }).unwrap()
       }
@@ -384,6 +433,103 @@ export default function VigilanciaGerenciamentoPage() {
     },
   ]
 
+  // Colunas para tabela de Casos Individuais
+  const colunasCasos = [
+    {
+      title: 'Nº',
+      dataIndex: 'numero_caso',
+      key: 'numero_caso',
+      width: 80,
+    },
+    {
+      title: 'SE',
+      dataIndex: 'semana_epidemiologica',
+      key: 'se',
+      width: 60,
+      sorter: (a, b) => a.semana_epidemiologica - b.semana_epidemiologica,
+    },
+    {
+      title: 'Paciente',
+      dataIndex: 'paciente',
+      key: 'paciente',
+      width: 200,
+      sorter: (a, b) => a.paciente.localeCompare(b.paciente),
+    },
+    {
+      title: 'DN',
+      dataIndex: 'data_nascimento',
+      key: 'data_nascimento',
+      width: 100,
+      render: (val) => val ? new Date(val).toLocaleDateString('pt-BR') : '-',
+    },
+    {
+      title: 'Sexo',
+      dataIndex: 'sexo',
+      key: 'sexo',
+      width: 60,
+      render: (val) => val ? <Tag color={val === 'F' ? 'pink' : 'blue'}>{val}</Tag> : '-',
+    },
+    {
+      title: 'Bairro',
+      dataIndex: 'bairro',
+      key: 'bairro',
+      width: 150,
+    },
+    {
+      title: 'Unidade',
+      dataIndex: 'unidade',
+      key: 'unidade',
+      width: 200,
+      ellipsis: true,
+    },
+    {
+      title: 'SINAN',
+      dataIndex: 'sinan',
+      key: 'sinan',
+      width: 100,
+    },
+    {
+      title: 'Notificado',
+      dataIndex: 'data_notificacao',
+      key: 'data_notificacao',
+      width: 100,
+      render: (val) => val ? new Date(val).toLocaleDateString('pt-BR') : '-',
+    },
+    {
+      title: 'Ações',
+      key: 'actions',
+      width: 150,
+      fixed: 'right',
+      render: (_, record) => (
+        <Space>
+          <Button
+            type="link"
+            size="small"
+            icon={<EditOutlined />}
+            onClick={() => abrirModalEdicao(record)}
+          >
+            Editar
+          </Button>
+          <Popconfirm
+            title="Tem certeza que deseja excluir?"
+            onConfirm={() => handleDelete(record.id)}
+            okText="Sim"
+            cancelText="Não"
+          >
+            <Button
+              type="link"
+              size="small"
+              danger
+              icon={<DeleteOutlined />}
+            >
+              Excluir
+            </Button>
+          </Popconfirm>
+        </Space>
+      ),
+    },
+  ]
+
   // Estatísticas
   const calcularEstatisticas = () => {
     if (!dadosFiltrados.length) return { total: 0, notificados: 0, confirmados: 0 }
@@ -524,6 +670,7 @@ export default function VigilanciaGerenciamentoPage() {
             >
               <Option value="bairros">Dados por Bairro</Option>
               <Option value="se">Dados por SE</Option>
+              <Option value="casos">Casos Individuais</Option>
             </Select>
           </div>
 
@@ -603,7 +750,11 @@ export default function VigilanciaGerenciamentoPage() {
         <Card>
           <Table
             dataSource={dadosFiltrados}
-            columns={filtroTipo === 'bairros' ? colunasBairros : colunasSE}
+            columns={
+              filtroTipo === 'bairros' ? colunasBairros :
+              filtroTipo === 'casos' ? colunasCasos :
+              colunasSE
+            }
             rowKey="id"
             loading={isLoading}
             pagination={{
@@ -747,72 +898,170 @@ export default function VigilanciaGerenciamentoPage() {
           layout="vertical"
           style={{ marginTop: '20px' }}
         >
-          <Row gutter={16}>
-            <Col span={24}>
-              <Form.Item
-                name="bairro"
-                label="Bairro"
-                rules={[{ required: true, message: 'Por favor, informe o bairro' }]}
-              >
-                <Input placeholder="Nome do bairro" />
-              </Form.Item>
-            </Col>
-          </Row>
+          {filtroTipo === 'casos' ? (
+            <>
+              <Row gutter={16}>
+                <Col span={8}>
+                  <Form.Item name="numero_caso" label="Nº Caso">
+                    <Input placeholder="Número do caso" />
+                  </Form.Item>
+                </Col>
+                <Col span={8}>
+                  <Form.Item
+                    name="semana_epidemiologica"
+                    label="SE"
+                    rules={[{ required: true, message: 'Informe a SE' }]}
+                  >
+                    <InputNumber style={{ width: '100%' }} min={1} max={53} />
+                  </Form.Item>
+                </Col>
+                <Col span={8}>
+                  <Form.Item name="sexo" label="Sexo">
+                    <Select placeholder="Sexo">
+                      <Option value="F">Feminino</Option>
+                      <Option value="M">Masculino</Option>
+                    </Select>
+                  </Form.Item>
+                </Col>
+              </Row>
 
-          <Row gutter={16}>
-            <Col span={12}>
-              <Form.Item
-                name="semana_epidemiologica"
-                label="Semana Epidemiológica"
-                rules={[
-                  { required: true, message: 'Informe a SE' },
-                  { type: 'number', min: 1, max: 53, message: 'SE deve ser entre 1 e 53' }
-                ]}
-              >
-                <InputNumber
-                  placeholder="1-53"
-                  style={{ width: '100%' }}
-                  min={1}
-                  max={53}
-                />
-              </Form.Item>
-            </Col>
-            <Col span={12}>
-              <Form.Item
-                name="notificados"
-                label="Casos Notificados"
-                rules={[
-                  { required: true, message: 'Informe os notificados' },
-                  { type: 'number', min: 0, message: 'Deve ser maior ou igual a 0' }
-                ]}
-              >
-                <InputNumber
-                  placeholder="0"
-                  style={{ width: '100%' }}
-                  min={0}
-                />
-              </Form.Item>
-            </Col>
-          </Row>
+              <Row gutter={16}>
+                <Col span={24}>
+                  <Form.Item
+                    name="paciente"
+                    label="Paciente"
+                    rules={[{ required: true, message: 'Informe o nome do paciente' }]}
+                  >
+                    <Input placeholder="Nome completo" />
+                  </Form.Item>
+                </Col>
+              </Row>
 
-          <Row gutter={16}>
-            <Col span={24}>
-              <Form.Item
-                name="confirmados"
-                label="Casos Confirmados"
-                rules={[
-                  { required: true, message: 'Informe os confirmados' },
-                  { type: 'number', min: 0, message: 'Deve ser maior ou igual a 0' }
-                ]}
-              >
-                <InputNumber
-                  placeholder="0"
-                  style={{ width: '100%' }}
-                  min={0}
-                />
-              </Form.Item>
-            </Col>
-          </Row>
+              <Row gutter={16}>
+                <Col span={12}>
+                  <Form.Item name="data_nascimento" label="Data de Nascimento">
+                    <Input type="date" />
+                  </Form.Item>
+                </Col>
+                <Col span={12}>
+                  <Form.Item name="bairro" label="Bairro">
+                    <Input placeholder="Bairro" />
+                  </Form.Item>
+                </Col>
+              </Row>
+
+              <Row gutter={16}>
+                <Col span={24}>
+                  <Form.Item name="unidade" label="Unidade de Saúde">
+                    <Input placeholder="Nome da unidade" />
+                  </Form.Item>
+                </Col>
+              </Row>
+
+              <Row gutter={16}>
+                <Col span={12}>
+                  <Form.Item name="sinan" label="SINAN">
+                    <Input placeholder="Número SINAN" />
+                  </Form.Item>
+                </Col>
+                <Col span={12}>
+                  <Form.Item name="data_notificacao" label="Data Notificação">
+                    <Input type="date" />
+                  </Form.Item>
+                </Col>
+              </Row>
+
+              <Row gutter={16}>
+                <Col span={12}>
+                  <Form.Item name="data_sintomas" label="Data Sintomas">
+                    <Input type="date" />
+                  </Form.Item>
+                </Col>
+                <Col span={12}>
+                  <Form.Item name="endereco" label="Endereço">
+                    <Input placeholder="Endereço completo" />
+                  </Form.Item>
+                </Col>
+              </Row>
+
+              <Row gutter={16}>
+                <Col span={24}>
+                  <Form.Item name="observacoes" label="Observações">
+                    <Input.TextArea rows={3} placeholder="Observações adicionais" />
+                  </Form.Item>
+                </Col>
+              </Row>
+            </>
+          ) : (
+            <>
+              <Row gutter={16}>
+                <Col span={24}>
+                  <Form.Item
+                    name="bairro"
+                    label="Bairro"
+                    rules={[{ required: true, message: 'Por favor, informe o bairro' }]}
+                  >
+                    <Input placeholder="Nome do bairro" />
+                  </Form.Item>
+                </Col>
+              </Row>
+
+              <Row gutter={16}>
+                <Col span={12}>
+                  <Form.Item
+                    name="semana_epidemiologica"
+                    label="Semana Epidemiológica"
+                    rules={[
+                      { required: true, message: 'Informe a SE' },
+                      { type: 'number', min: 1, max: 53, message: 'SE deve ser entre 1 e 53' }
+                    ]}
+                  >
+                    <InputNumber
+                      placeholder="1-53"
+                      style={{ width: '100%' }}
+                      min={1}
+                      max={53}
+                    />
+                  </Form.Item>
+                </Col>
+                <Col span={12}>
+                  <Form.Item
+                    name="notificados"
+                    label="Casos Notificados"
+                    rules={[
+                      { required: true, message: 'Informe os notificados' },
+                      { type: 'number', min: 0, message: 'Deve ser maior ou igual a 0' }
+                    ]}
+                  >
+                    <InputNumber
+                      placeholder="0"
+                      style={{ width: '100%' }}
+                      min={0}
+                    />
+                  </Form.Item>
+                </Col>
+              </Row>
+
+              <Row gutter={16}>
+                <Col span={24}>
+                  <Form.Item
+                    name="confirmados"
+                    label="Casos Confirmados"
+                    rules={[
+                      { required: true, message: 'Informe os confirmados' },
+                      { type: 'number', min: 0, message: 'Deve ser maior ou igual a 0' }
+                    ]}
+                  >
+                    <InputNumber
+                      placeholder="0"
+                      style={{ width: '100%' }}
+                      min={0}
+                    />
+                  </Form.Item>
+                </Col>
+              </Row>
+            </>
+          )}
 
           {registroEditando && (
             <div style={{
