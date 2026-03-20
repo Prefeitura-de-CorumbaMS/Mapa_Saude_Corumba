@@ -75,56 +75,64 @@ export default function DengueVigilanciaPage() {
     }
   }, [dadosAno, seSelecionada]);
 
-  // Buscar dados da SE selecionada (agregados OU casos)
-  const { data: dadosSE, isLoading: loadingSE, error: errorSE } = usarCasos
-    ? useGetDengueCasosSEQuery(
-        { ano: anoAtual, se: seSelecionada },
-        { skip: !seSelecionada }
-      )
-    : useGetDengueBySEQuery(
-        { ano: anoAtual, se: seSelecionada },
-        { skip: !seSelecionada }
-      );
+  // Buscar dados agregados tradicionais
+  const { data: dadosSEAgregado, isLoading: loadingSEAgregado, error: errorSEAgregado } = useGetDengueBySEQuery(
+    { ano: anoAtual, se: seSelecionada },
+    { skip: !seSelecionada || usarCasos }
+  );
+  const { data: dadosSerieAgregado, isLoading: loadingSerieAgregado } = useGetDengueSerieQuery(
+    { ano: anoAtual, se_inicio: 1, se_fim: seSelecionada },
+    { skip: !seSelecionada || usarCasos }
+  );
+  const { data: dadosPerfilAgregado, isLoading: loadingPerfilAgregado } = useGetDenguePerfilQuery(
+    { ano: anoAtual, se: seSelecionada },
+    { skip: !seSelecionada || usarCasos }
+  );
+  const { data: dadosBairrosNotifAgregado, isLoading: loadingBairrosNotifAgregado } = useGetDengueBairrosQuery(
+    { ano: anoAtual, se: seSelecionada, tipo: 'notificados' },
+    { skip: !seSelecionada || usarCasos }
+  );
+  const { data: dadosBairrosConfAgregado, isLoading: loadingBairrosConfAgregado } = useGetDengueBairrosQuery(
+    { ano: anoAtual, se: seSelecionada, tipo: 'confirmados' },
+    { skip: !seSelecionada || usarCasos }
+  );
 
-  const { data: dadosSerie, isLoading: loadingSerie } = usarCasos
-    ? useGetDengueCasosSerieQuery(
-        { ano: anoAtual, se_inicio: 1, se_fim: seSelecionada },
-        { skip: !seSelecionada }
-      )
-    : useGetDengueSerieQuery(
-        { ano: anoAtual, se_inicio: 1, se_fim: seSelecionada },
-        { skip: !seSelecionada }
-      );
+  // Buscar dados de casos individuais
+  const { data: dadosSECasos, isLoading: loadingSECasos, error: errorSECasos } = useGetDengueCasosSEQuery(
+    { ano: anoAtual, se: seSelecionada },
+    { skip: !seSelecionada || !usarCasos }
+  );
+  const { data: dadosSerieCasos, isLoading: loadingSerieCasos } = useGetDengueCasosSerieQuery(
+    { ano: anoAtual, se_inicio: 1, se_fim: seSelecionada },
+    { skip: !seSelecionada || !usarCasos }
+  );
+  const { data: dadosPerfilCasos, isLoading: loadingPerfilCasos } = useGetDengueCasosPerfilQuery(
+    { ano: anoAtual, se: seSelecionada },
+    { skip: !seSelecionada || !usarCasos }
+  );
+  const { data: dadosBairrosNotifCasos, isLoading: loadingBairrosNotifCasos } = useGetDengueCasosBairrosQuery(
+    { ano: anoAtual, se: seSelecionada, tipo: 'notificados' },
+    { skip: !seSelecionada || !usarCasos }
+  );
+  const { data: dadosBairrosConfCasos, isLoading: loadingBairrosConfCasos } = useGetDengueCasosBairrosQuery(
+    { ano: anoAtual, se: seSelecionada, tipo: 'confirmados' },
+    { skip: !seSelecionada || !usarCasos }
+  );
 
-  const { data: dadosPerfil, isLoading: loadingPerfil } = usarCasos
-    ? useGetDengueCasosPerfilQuery(
-        { ano: anoAtual, se: seSelecionada },
-        { skip: !seSelecionada }
-      )
-    : useGetDenguePerfilQuery(
-        { ano: anoAtual, se: seSelecionada },
-        { skip: !seSelecionada }
-      );
+  // Selecionar dados com base no toggle
+  const dadosSE = usarCasos ? dadosSECasos : dadosSEAgregado;
+  const dadosSerie = usarCasos ? dadosSerieCasos : dadosSerieAgregado;
+  const dadosPerfil = usarCasos ? dadosPerfilCasos : dadosPerfilAgregado;
+  const dadosBairrosNotif = usarCasos ? dadosBairrosNotifCasos : dadosBairrosNotifAgregado;
+  const dadosBairrosConf = usarCasos ? dadosBairrosConfCasos : dadosBairrosConfAgregado;
 
-  const { data: dadosBairrosNotif, isLoading: loadingBairrosNotif } = usarCasos
-    ? useGetDengueCasosBairrosQuery(
-        { ano: anoAtual, se: seSelecionada, tipo: 'notificados' },
-        { skip: !seSelecionada }
-      )
-    : useGetDengueBairrosQuery(
-        { ano: anoAtual, se: seSelecionada, tipo: 'notificados' },
-        { skip: !seSelecionada }
-      );
+  const loadingSE = usarCasos ? loadingSECasos : loadingSEAgregado;
+  const loadingSerie = usarCasos ? loadingSerieCasos : loadingSerieAgregado;
+  const loadingPerfil = usarCasos ? loadingPerfilCasos : loadingPerfilAgregado;
+  const loadingBairrosNotif = usarCasos ? loadingBairrosNotifCasos : loadingBairrosNotifAgregado;
+  const loadingBairrosConf = usarCasos ? loadingBairrosConfCasos : loadingBairrosConfAgregado;
 
-  const { data: dadosBairrosConf, isLoading: loadingBairrosConf } = usarCasos
-    ? useGetDengueCasosBairrosQuery(
-        { ano: anoAtual, se: seSelecionada, tipo: 'confirmados' },
-        { skip: !seSelecionada }
-      )
-    : useGetDengueBairrosQuery(
-        { ano: anoAtual, se: seSelecionada, tipo: 'confirmados' },
-        { skip: !seSelecionada }
-      );
+  const errorSE = usarCasos ? errorSECasos : errorSEAgregado;
 
   const isLoading = loadingAno || loadingSE || loadingSerie || loadingPerfil || loadingBairrosNotif || loadingBairrosConf;
 
