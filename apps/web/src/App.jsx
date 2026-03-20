@@ -16,6 +16,7 @@ import BairrosPage from './pages/admin/BairrosPage'
 import UsersPage from './pages/admin/UsersPage'
 import AuditPage from './pages/admin/AuditPage'
 import VigilanciaImportacaoPage from './pages/admin/VigilanciaImportacaoPage'
+import VigilanciaGerenciamentoPage from './pages/admin/VigilanciaGerenciamentoPage'
 import DengueVigilanciaPage from './pages/vigilancia/DengueVigilanciaPage'
 
 function App() {
@@ -53,6 +54,7 @@ function App() {
           <Route path="icones" element={<IconesPage />} />
           <Route path="bairros" element={<BairrosPage />} />
           <Route path="vigilancia-importacao" element={<VigilanciaImportacaoPage />} />
+          <Route path="vigilancia-dados" element={<VigilanciaGerenciamentoPage />} />
           <Route path="users" element={<SuperadminRoute><UsersPage /></SuperadminRoute>} />
           <Route path="audit" element={<SuperadminRoute><AuditPage /></SuperadminRoute>} />
         </Route>

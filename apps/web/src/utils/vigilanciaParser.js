@@ -56,17 +56,18 @@ export function parseNotificados(textData, seInicial, seFinal) {
       throw new Error('Não foi possível encontrar a linha de tipos (N, P, D).')
     }
 
-    // Linha de semanas epidemiológicas
-    const headerSemanas = linhas[indiceLinhaSemanas].split(separador).slice(1) // Remove primeira coluna
+    // Linha de semanas epidemiológicas (mantém todas as colunas)
+    const colunasLinhaSemanas = linhas[indiceLinhaSemanas].split(separador)
 
-    // Linha de tipos (N, P, D)
-    const headerTipos = linhas[indiceLinhaTipos].split(separador).slice(1) // Remove primeira coluna
+    // Linha de tipos (N, P, D) (mantém todas as colunas)
+    const colunasLinhaTipos = linhas[indiceLinhaTipos].split(separador)
 
     // Mapear índices de colunas para cada SE dentro do intervalo
     const mapeamentoColunas = []
 
-    for (let i = 0; i < headerSemanas.length; i += 3) {
-      const seStr = headerSemanas[i]?.trim()
+    // Começa do índice 1 (pula a primeira coluna que é "SEMANA" ou "BAIRRO")
+    for (let i = 1; i < colunasLinhaSemanas.length; i += 3) {
+      const seStr = colunasLinhaSemanas[i]?.trim()
       if (!seStr) continue
 
       const se = parseInt(seStr)
@@ -75,16 +76,16 @@ export function parseNotificados(textData, seInicial, seFinal) {
       if (se < seInicial || se > seFinal) continue
 
       // Verifica se as próximas 2 colunas são P e D
-      const tipoN = headerTipos[i]?.trim()
-      const tipoP = headerTipos[i + 1]?.trim()
-      const tipoD = headerTipos[i + 2]?.trim()
+      const tipoN = colunasLinhaTipos[i]?.trim()
+      const tipoP = colunasLinhaTipos[i + 1]?.trim()
+      const tipoD = colunasLinhaTipos[i + 2]?.trim()
 
       if (tipoN === 'N' && tipoP === 'P' && tipoD === 'D') {
         mapeamentoColunas.push({
           se,
-          indiceN: i + 1, // +1 porque removemos a primeira coluna
-          indiceP: i + 2,
-          indiceD: i + 3,
+          indiceN: i,     // Índice da coluna N
+          indiceP: i + 1, // Índice da coluna P
+          indiceD: i + 2, // Índice da coluna D
         })
       }
     }
@@ -93,10 +94,15 @@ export function parseNotificados(textData, seInicial, seFinal) {
       throw new Error(`Nenhuma SE encontrada no intervalo ${seInicial}-${seFinal}`)
     }
 
-    // Parse dados de bairros (linhas 6 em diante)
+    console.log('📊 Mapeamento de colunas:', mapeamentoColunas)
+    console.log('📍 Índice linha semanas:', indiceLinhaSemanas)
+    console.log('📍 Índice linha tipos:', indiceLinhaTipos)
+    console.log('📍 Total de linhas:', linhas.length)
+
+    // Parse dados de bairros (começa logo após a linha de tipos)
     const resultado = []
 
-    for (let i = 5; i < linhas.length; i++) {
+    for (let i = indiceLinhaTipos + 1; i < linhas.length; i++) {
       const colunas = linhas[i].split(separador)
       const bairro = colunas[0]?.trim()
 
@@ -120,6 +126,15 @@ export function parseNotificados(textData, seInicial, seFinal) {
         })
       }
     }
+
+    console.log('✅ Total de registros parseados:', resultado.length)
+    console.log('📊 Primeiros 3 registros:', resultado.slice(0, 3))
+
+    // Calcular total da SE 1 para debug
+    const totalSE1 = resultado
+      .filter(r => r.se === 1)
+      .reduce((sum, r) => sum + r.notificados, 0)
+    console.log('🔍 Total SE 1 (debug):', totalSE1)
 
     return resultado
 

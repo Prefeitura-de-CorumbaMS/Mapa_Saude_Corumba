@@ -1259,7 +1259,8 @@ export default function MapPage() {
                     )}
                   </Card>
 
-                  {/* Card Vigilância em Saúde - TEMPORARIAMENTE OCULTO */}
+                  {/* Card Vigilância em Saúde - OCULTO TEMPORARIAMENTE */}
+                  {/* Será exibido após aprovação dos responsáveis */}
                   {/* <Card
                     hoverable
                     onClick={() => navigate('/vigilancia')}

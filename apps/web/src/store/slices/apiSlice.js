@@ -368,6 +368,13 @@ export const apiSlice = createApi({
       keepUnusedDataFor: 600, // Cache 10 minutos
     }),
 
+    // Buscar todos os dados de um ano (para gerenciamento)
+    getDengueByAno: builder.query({
+      query: ({ ano }) => `/vigilancia/dengue/ano?ano=${ano}`,
+      providesTags: ['Vigilancia'],
+      keepUnusedDataFor: 300, // Cache 5 minutos
+    }),
+
     getDengueSerie: builder.query({
       query: ({ ano, se_inicio, se_fim }) =>
         `/vigilancia/dengue/serie?ano=${ano}&se_inicio=${se_inicio}&se_fim=${se_fim}`,
@@ -394,6 +401,44 @@ export const apiSlice = createApi({
         url: '/vigilancia/dengue/importar',
         method: 'POST',
         body: data,
+      }),
+      invalidatesTags: ['Vigilancia'],
+    }),
+
+    // Vigilância - Atualizar registro de bairro
+    updateDengueBairro: builder.mutation({
+      query: ({ id, ...data }) => ({
+        url: `/vigilancia/dengue/bairro/${id}`,
+        method: 'PUT',
+        body: data,
+      }),
+      invalidatesTags: ['Vigilancia'],
+    }),
+
+    // Vigilância - Deletar registro de bairro
+    deleteDengueBairro: builder.mutation({
+      query: ({ id }) => ({
+        url: `/vigilancia/dengue/bairro/${id}`,
+        method: 'DELETE',
+      }),
+      invalidatesTags: ['Vigilancia'],
+    }),
+
+    // Vigilância - Atualizar registro de SE
+    updateDengueSE: builder.mutation({
+      query: ({ id, ...data }) => ({
+        url: `/vigilancia/dengue/se/${id}`,
+        method: 'PUT',
+        body: data,
+      }),
+      invalidatesTags: ['Vigilancia'],
+    }),
+
+    // Vigilância - Deletar registro de SE
+    deleteDengueSE: builder.mutation({
+      query: ({ id }) => ({
+        url: `/vigilancia/dengue/se/${id}`,
+        method: 'DELETE',
       }),
       invalidatesTags: ['Vigilancia'],
     }),
@@ -443,8 +488,13 @@ export const {
   useReordenarIconesMutation,
   useGetAnalyticsStatsQuery,
   useGetDengueBySEQuery,
+  useGetDengueByAnoQuery,
   useGetDengueSerieQuery,
   useGetDenguePerfilQuery,
   useGetDengueBairrosQuery,
   useImportarVigilanciaMutation,
+  useUpdateDengueBairroMutation,
+  useDeleteDengueBairroMutation,
+  useUpdateDengueSEMutation,
+  useDeleteDengueSEMutation,
 } = apiSlice

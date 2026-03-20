@@ -1,4 +1,6 @@
-import { Spin, Alert } from 'antd';
+import { useState, useEffect } from 'react';
+import { Spin, Alert, Select, Card, Space, Typography, Tooltip } from 'antd';
+import { InfoCircleOutlined } from '@ant-design/icons';
 import {
   Chart as ChartJS,
   CategoryScale,
@@ -8,16 +10,21 @@ import {
   PointElement,
   ArcElement,
   Title,
-  Tooltip,
+  Tooltip as ChartTooltip,
   Legend,
   Filler,
 } from 'chart.js';
 import {
+  useGetDengueByAnoQuery,
   useGetDengueBySEQuery,
   useGetDengueSerieQuery,
   useGetDenguePerfilQuery,
   useGetDengueBairrosQuery,
 } from '../../store/slices/apiSlice';
+import { getPeriodoFormatado, getPeriodoCurto, EXPLICACAO_SE } from '../../utils/calendarioEpidemiologico';
+
+const { Text } = Typography;
+const { Option } = Select;
 import DengueHeader from '../../components/vigilancia/dengue/DengueHeader';
 import DengueKPICards from '../../components/vigilancia/dengue/DengueKPICards';
 import DengueSerieHistorica from '../../components/vigilancia/dengue/DengueSerieHistorica';
@@ -37,20 +44,55 @@ ChartJS.register(
   PointElement,
   ArcElement,
   Title,
-  Tooltip,
+  ChartTooltip,
   Legend,
   Filler
 );
 
 export default function DengueVigilanciaPage() {
-  // Buscar dados da SE 09/2026
-  const { data: dadosSE, isLoading: loadingSE, error: errorSE } = useGetDengueBySEQuery({ ano: 2026, se: 9 });
-  const { data: dadosSerie, isLoading: loadingSerie } = useGetDengueSerieQuery({ ano: 2026, se_inicio: 1, se_fim: 9 });
-  const { data: dadosPerfil, isLoading: loadingPerfil } = useGetDenguePerfilQuery({ ano: 2026, se: 9 });
-  const { data: dadosBairrosNotif, isLoading: loadingBairrosNotif } = useGetDengueBairrosQuery({ ano: 2026, se: 9, tipo: 'notificados' });
-  const { data: dadosBairrosConf, isLoading: loadingBairrosConf } = useGetDengueBairrosQuery({ ano: 2026, se: 9, tipo: 'confirmados' });
+  const anoAtual = 2026;
+  const [seSelecionada, setSESelecionada] = useState(null);
+  const [sesDisponiveis, setSEsDisponiveis] = useState([]);
 
-  const isLoading = loadingSE || loadingSerie || loadingPerfil || loadingBairrosNotif || loadingBairrosConf;
+  // Buscar todas as SEs do ano para preencher o seletor
+  const { data: dadosAno, isLoading: loadingAno } = useGetDengueByAnoQuery({ ano: anoAtual });
+
+  // Definir a SE selecionada automaticamente (última disponível)
+  useEffect(() => {
+    if (dadosAno?.data?.semanas && dadosAno.data.semanas.length > 0) {
+      const ses = dadosAno.data.semanas.map(s => s.semana_epidemiologica).sort((a, b) => b - a);
+      setSEsDisponiveis(ses);
+
+      // Se não há SE selecionada, selecionar a última
+      if (!seSelecionada) {
+        setSESelecionada(ses[0]); // Última SE (maior número)
+      }
+    }
+  }, [dadosAno, seSelecionada]);
+
+  // Buscar dados da SE selecionada
+  const { data: dadosSE, isLoading: loadingSE, error: errorSE } = useGetDengueBySEQuery(
+    { ano: anoAtual, se: seSelecionada },
+    { skip: !seSelecionada }
+  );
+  const { data: dadosSerie, isLoading: loadingSerie } = useGetDengueSerieQuery(
+    { ano: anoAtual, se_inicio: 1, se_fim: seSelecionada },
+    { skip: !seSelecionada }
+  );
+  const { data: dadosPerfil, isLoading: loadingPerfil } = useGetDenguePerfilQuery(
+    { ano: anoAtual, se: seSelecionada },
+    { skip: !seSelecionada }
+  );
+  const { data: dadosBairrosNotif, isLoading: loadingBairrosNotif } = useGetDengueBairrosQuery(
+    { ano: anoAtual, se: seSelecionada, tipo: 'notificados' },
+    { skip: !seSelecionada }
+  );
+  const { data: dadosBairrosConf, isLoading: loadingBairrosConf } = useGetDengueBairrosQuery(
+    { ano: anoAtual, se: seSelecionada, tipo: 'confirmados' },
+    { skip: !seSelecionada }
+  );
+
+  const isLoading = loadingAno || loadingSE || loadingSerie || loadingPerfil || loadingBairrosNotif || loadingBairrosConf;
 
   if (isLoading || !dadosSE?.data) {
     return (
@@ -87,6 +129,88 @@ export default function DengueVigilanciaPage() {
         margin: '0 auto',
         padding: '0',
       }}>
+        {/* Seletor de Semana Epidemiológica */}
+        {sesDisponiveis.length > 0 && (
+          <Card
+            style={{
+              margin: '0 16px 16px 16px',
+              borderRadius: '12px',
+              background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
+              border: 'none',
+            }}
+            bodyStyle={{ padding: '16px' }}
+          >
+            <Space direction="vertical" style={{ width: '100%' }} size="small">
+              <Space align="center">
+                <Text style={{ color: '#fff', fontSize: '14px', fontWeight: '500' }}>
+                  📅 Selecione a Semana Epidemiológica:
+                </Text>
+                <Tooltip
+                  title={
+                    <div style={{ maxWidth: '400px' }}>
+                      <div style={{ fontWeight: 'bold', marginBottom: '8px' }}>
+                        {EXPLICACAO_SE.titulo}
+                      </div>
+                      <div style={{ marginBottom: '8px' }}>
+                        {EXPLICACAO_SE.texto}
+                      </div>
+                      <div style={{ fontSize: '11px', marginTop: '8px' }}>
+                        <strong>Regras:</strong>
+                        <ul style={{ margin: '4px 0 0 0', paddingLeft: '16px' }}>
+                          {EXPLICACAO_SE.regras.map((regra, idx) => (
+                            <li key={idx}>{regra}</li>
+                          ))}
+                        </ul>
+                      </div>
+                      <div style={{ fontSize: '11px', marginTop: '8px', fontStyle: 'italic' }}>
+                        {EXPLICACAO_SE.exemplo}
+                      </div>
+                    </div>
+                  }
+                  overlayStyle={{ maxWidth: '450px' }}
+                >
+                  <InfoCircleOutlined style={{ color: '#fff', cursor: 'pointer', fontSize: '16px' }} />
+                </Tooltip>
+              </Space>
+              <Select
+                value={seSelecionada}
+                onChange={setSESelecionada}
+                style={{ width: '100%' }}
+                size="large"
+                placeholder="Selecione uma SE"
+                optionLabelProp="label"
+              >
+                {sesDisponiveis.map(se => (
+                  <Option
+                    key={se}
+                    value={se}
+                    label={`SE ${String(se).padStart(2, '0')} / ${anoAtual}`}
+                  >
+                    <div style={{ padding: '4px 0' }}>
+                      <div style={{ fontWeight: 'bold', marginBottom: '2px' }}>
+                        SE {String(se).padStart(2, '0')} / {anoAtual}
+                      </div>
+                      <div style={{ fontSize: '12px', color: '#666' }}>
+                        📆 {getPeriodoFormatado(se, anoAtual)}
+                      </div>
+                    </div>
+                  </Option>
+                ))}
+              </Select>
+              {seSelecionada && (
+                <div style={{ marginTop: '8px' }}>
+                  <Text style={{ color: '#fff', fontSize: '13px', fontWeight: '500' }}>
+                    📆 Período: {getPeriodoFormatado(seSelecionada, anoAtual)}
+                  </Text>
+                </div>
+              )}
+              <Text style={{ color: 'rgba(255,255,255,0.8)', fontSize: '12px' }}>
+                💡 Última atualização: SE {String(sesDisponiveis[0]).padStart(2, '0')} ({getPeriodoCurto(sesDisponiveis[0], anoAtual)})
+              </Text>
+            </Space>
+          </Card>
+        )}
+
         <DengueHeader data={se} />
         <DengueKPICards data={se} />
         <DengueSerieHistorica serieData={serie} />

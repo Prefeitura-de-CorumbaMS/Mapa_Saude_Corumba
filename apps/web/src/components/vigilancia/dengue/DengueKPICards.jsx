@@ -11,10 +11,14 @@ import {
 export default function DengueKPICards({ data }) {
   if (!data) return null;
 
+  const seFormatada = String(data.semana_epidemiologica).padStart(2, '0');
+  const sublabelAcumulado = `Total até a SE ${seFormatada}`;
+
   const cards = [
     {
       icon: <FileTextOutlined style={{ fontSize: '32px' }} />,
       label: 'CASOS NOTIFICADOS',
+      sublabel: sublabelAcumulado,
       labelStyle: { textTransform: 'uppercase', fontSize: '11px', fontWeight: '700' },
       value: data.kpis.casos_notificados,
       color: '#1F3473',
@@ -24,6 +28,7 @@ export default function DengueKPICards({ data }) {
     {
       icon: <ExperimentOutlined style={{ fontSize: '32px' }} />,
       label: 'CASOS CONFIRMADOS',
+      sublabel: sublabelAcumulado,
       labelStyle: { textTransform: 'uppercase', fontSize: '11px', fontWeight: '700' },
       value: data.kpis.casos_confirmados,
       color: '#F97316',
@@ -33,7 +38,7 @@ export default function DengueKPICards({ data }) {
     {
       icon: <DotChartOutlined style={{ fontSize: '32px' }} />,
       label: 'SOROTIPO TIPO-3',
-      sublabel: 'Confirmado',
+      sublabel: sublabelAcumulado,
       labelStyle: { textTransform: 'uppercase', fontSize: '11px', fontWeight: '700' },
       value: data.kpis.sorotipo_tipo3,
       color: '#9333EA',
@@ -43,6 +48,7 @@ export default function DengueKPICards({ data }) {
     {
       icon: <MedicineBoxOutlined style={{ fontSize: '32px' }} />,
       label: 'ISOLAMENTO VIRAL',
+      sublabel: sublabelAcumulado,
       labelStyle: { textTransform: 'uppercase', fontSize: '11px', fontWeight: '700' },
       value: data.kpis.isolamentos_virais,
       color: '#14B8A6',
@@ -52,7 +58,7 @@ export default function DengueKPICards({ data }) {
     {
       icon: <CheckCircleOutlined style={{ fontSize: '32px' }} />,
       label: 'ÓBITOS',
-      sublabel: 'Nenhum registrado',
+      sublabel: data.kpis.obitos === 0 ? 'Nenhum registrado' : sublabelAcumulado,
       labelStyle: { textTransform: 'uppercase', fontSize: '11px', fontWeight: '700' },
       value: data.kpis.obitos,
       color: '#16A34A',

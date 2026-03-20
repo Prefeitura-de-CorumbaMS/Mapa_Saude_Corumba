@@ -1,7 +1,10 @@
 import { Card } from 'antd';
+import { getPeriodoFormatado } from '../../../utils/calendarioEpidemiologico';
 
 export default function DengueHeader({ data }) {
   if (!data) return null;
+
+  const periodo = getPeriodoFormatado(data.semana_epidemiologica, data.ano);
 
   return (
     <Card
@@ -58,10 +61,20 @@ export default function DengueHeader({ data }) {
           }}>
             Boletim Epidemiológico · SE {data.semana_epidemiologica.toString().padStart(2, '0')}
           </span>
+          {periodo && (
+            <p style={{
+              color: '#40A1E6',
+              fontSize: '12px',
+              fontWeight: '600',
+              margin: '8px 0 4px 0',
+            }}>
+              📆 {periodo}
+            </p>
+          )}
           <p style={{
             color: '#a5d6ff',
             fontSize: '11px',
-            margin: '8px 0 0 0',
+            margin: '4px 0 0 0',
           }}>
             Secretaria Municipal de Saúde
           </p>

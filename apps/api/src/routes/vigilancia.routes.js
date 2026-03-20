@@ -551,4 +551,218 @@ async function importarKPIs(ano, dados, userId) {
   });
 }
 
+/**
+ * GET /api/vigilancia/dengue/ano?ano=2026
+ * Retorna TODOS os dados de um ano (SEs e Bairros)
+ * Para gerenciamento e relatórios
+ */
+router.get('/dengue/ano', async (req, res) => {
+  try {
+    const { ano } = req.query;
+
+    if (!ano) {
+      return res.status(400).json({
+        success: false,
+        error: 'Parâmetro obrigatório: ano',
+      });
+    }
+
+    // Buscar todas as SEs do ano
+    const semanas = await prisma.vIGILANCIA_Dengue_SE.findMany({
+      where: {
+        ano: parseInt(ano),
+      },
+      orderBy: {
+        semana_epidemiologica: 'asc',
+      },
+    });
+
+    // Buscar todos os dados de bairros do ano
+    const bairros = await prisma.vIGILANCIA_Dengue_Bairro.findMany({
+      where: {
+        ano: parseInt(ano),
+      },
+      orderBy: [
+        { semana_epidemiologica: 'asc' },
+        { bairro: 'asc' },
+      ],
+    });
+
+    res.json({
+      success: true,
+      data: {
+        ano: parseInt(ano),
+        semanas,
+        bairros,
+        totais: {
+          total_semanas: semanas.length,
+          total_registros_bairros: bairros.length,
+        },
+      },
+    });
+  } catch (error) {
+    logger.error('Erro ao buscar dados do ano', {
+      error: error.message,
+      stack: error.stack,
+    });
+    res.status(500).json({
+      success: false,
+      error: 'Erro interno do servidor',
+    });
+  }
+});
+
+/**
+ * PUT /api/vigilancia/dengue/bairro/:id
+ * Atualiza dados de um registro de bairro
+ */
+router.put('/dengue/bairro/:id', authenticate, requireAdmin, asyncHandler(async (req, res) => {
+  const { id } = req.params;
+  const { bairro, semana_epidemiologica, notificados, confirmados, ano } = req.body;
+
+  // Validações
+  if (!bairro || !semana_epidemiologica || notificados === undefined || confirmados === undefined) {
+    return res.status(400).json({
+      success: false,
+      error: 'Campos obrigatórios: bairro, semana_epidemiologica, notificados, confirmados',
+    });
+  }
+
+  // Atualizar registro do bairro
+  const atualizado = await prisma.vIGILANCIA_Dengue_Bairro.update({
+    where: { id: parseInt(id) },
+    data: {
+      bairro: bairro.trim(),
+      semana_epidemiologica: parseInt(semana_epidemiologica),
+      notificados: parseInt(notificados),
+      confirmados: parseInt(confirmados),
+      ano: parseInt(ano),
+    },
+  });
+
+  // Recalcular totais da SE somando todos os bairros
+  const totaisBairros = await prisma.vIGILANCIA_Dengue_Bairro.aggregate({
+    where: {
+      ano: parseInt(ano),
+      semana_epidemiologica: parseInt(semana_epidemiologica),
+    },
+    _sum: {
+      notificados: true,
+      confirmados: true,
+    },
+  });
+
+  // Atualizar registro na tabela de SE com os novos totais
+  await prisma.vIGILANCIA_Dengue_SE.upsert({
+    where: {
+      ano_semana_epidemiologica: {
+        ano: parseInt(ano),
+        semana_epidemiologica: parseInt(semana_epidemiologica),
+      },
+    },
+    update: {
+      casos_notificados: totaisBairros._sum.notificados || 0,
+      casos_confirmados: totaisBairros._sum.confirmados || 0,
+    },
+    create: {
+      ano: parseInt(ano),
+      semana_epidemiologica: parseInt(semana_epidemiologica),
+      casos_notificados: totaisBairros._sum.notificados || 0,
+      casos_confirmados: totaisBairros._sum.confirmados || 0,
+      sorotipo_tipo1: 0,
+      sorotipo_tipo2: 0,
+      sorotipo_tipo3: 0,
+      sorotipo_tipo4: 0,
+      isolamentos_virais: 0,
+      obitos: 0,
+    },
+  });
+
+  logger.info('Registro de bairro atualizado e totais da SE recalculados', {
+    id,
+    bairro,
+    se: semana_epidemiologica,
+    totais: {
+      notificados: totaisBairros._sum.notificados,
+      confirmados: totaisBairros._sum.confirmados,
+    },
+    user: req.user?.username,
+  });
+
+  res.json({
+    success: true,
+    data: atualizado,
+    totais_recalculados: {
+      notificados: totaisBairros._sum.notificados,
+      confirmados: totaisBairros._sum.confirmados,
+    },
+  });
+}));
+
+/**
+ * DELETE /api/vigilancia/dengue/bairro/:id
+ * Deleta um registro de bairro
+ */
+router.delete('/dengue/bairro/:id', authenticate, requireAdmin, asyncHandler(async (req, res) => {
+  const { id } = req.params;
+
+  // Buscar o registro antes de deletar para pegar ano e SE
+  const registro = await prisma.vIGILANCIA_Dengue_Bairro.findUnique({
+    where: { id: parseInt(id) },
+  });
+
+  if (!registro) {
+    return res.status(404).json({
+      success: false,
+      error: 'Registro não encontrado',
+    });
+  }
+
+  const { ano, semana_epidemiologica } = registro;
+
+  // Deletar o registro
+  await prisma.vIGILANCIA_Dengue_Bairro.delete({
+    where: { id: parseInt(id) },
+  });
+
+  // Recalcular totais agregando todos os bairros restantes desta SE
+  const totaisBairros = await prisma.vIGILANCIA_Dengue_Bairro.aggregate({
+    where: {
+      ano: parseInt(ano),
+      semana_epidemiologica: parseInt(semana_epidemiologica),
+    },
+    _sum: {
+      notificados: true,
+      confirmados: true,
+    },
+  });
+
+  // Atualizar a tabela SE com os novos totais
+  await prisma.vIGILANCIA_Dengue_SE.update({
+    where: {
+      ano_semana_epidemiologica: {
+        ano: parseInt(ano),
+        semana_epidemiologica: parseInt(semana_epidemiologica),
+      },
+    },
+    data: {
+      casos_notificados: totaisBairros._sum.notificados || 0,
+      casos_confirmados: totaisBairros._sum.confirmados || 0,
+      updated_at: new Date(),
+    },
+  });
+
+  logger.info('Registro de bairro deletado e totais recalculados', {
+    id,
+    ano,
+    semana_epidemiologica,
+    user: req.user?.username,
+  });
+
+  res.json({
+    success: true,
+    message: 'Registro deletado com sucesso',
+  });
+}));
+
 module.exports = router;
