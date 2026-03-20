@@ -4,6 +4,8 @@
 const express = require('express');
 const { PrismaClient } = require('@prisma/client');
 const { logger } = require('@sigls/logger');
+const { asyncHandler } = require('../middleware/error.middleware');
+const { authenticate, requireAdmin } = require('../middleware/auth.middleware');
 
 const router = express.Router();
 const prisma = new PrismaClient();
@@ -271,8 +273,6 @@ router.get('/dengue/bairros', async (req, res) => {
 // ============================================================================
 // ADMIN ENDPOINTS - Importação de Dados
 // ============================================================================
-
-const { authenticate, requireAdmin } = require('../middleware/auth.middleware');
 
 /**
  * POST /api/vigilancia/dengue/importar
