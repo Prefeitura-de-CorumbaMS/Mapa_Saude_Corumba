@@ -1113,7 +1113,7 @@ router.get('/dengue/casos/serie', async (req, res) => {
 
 /**
  * GET /api/vigilancia/dengue/casos/se?ano=2026&se=9
- * Agrega totais de casos até uma SE específica
+ * Retorna casos da SE específica (não acumulado)
  */
 router.get('/dengue/casos/se', async (req, res) => {
   try {
@@ -1126,8 +1126,16 @@ router.get('/dengue/casos/se', async (req, res) => {
       });
     }
 
-    // Contar casos até a SE
-    const totalCasos = await prisma.vIGILANCIA_Dengue_Caso.count({
+    // Contar casos APENAS da SE específica (não acumulado)
+    const casosDaSE = await prisma.vIGILANCIA_Dengue_Caso.count({
+      where: {
+        ano: parseInt(ano),
+        semana_epidemiologica: parseInt(se),
+      },
+    });
+
+    // Também calcular acumulado até a SE (para série temporal)
+    const casosAcumulados = await prisma.vIGILANCIA_Dengue_Caso.count({
       where: {
         ano: parseInt(ano),
         semana_epidemiologica: {
@@ -1141,10 +1149,10 @@ router.get('/dengue/casos/se', async (req, res) => {
       data: {
         ano: parseInt(ano),
         semana_epidemiologica: parseInt(se),
-        periodo: `SE 01 a SE ${String(se).padStart(2, '0')}`,
+        periodo: `SE ${String(se).padStart(2, '0')}/${ano}`,
         kpis: {
-          casos_notificados: totalCasos,
-          casos_confirmados: totalCasos, // Por enquanto, todos são considerados confirmados
+          casos_notificados: casosDaSE, // Casos apenas desta SE
+          casos_confirmados: casosDaSE, // Casos do laboratório são confirmados
           sorotipo_tipo1: 0,
           sorotipo_tipo2: 0,
           sorotipo_tipo3: 0,
@@ -1152,9 +1160,10 @@ router.get('/dengue/casos/se', async (req, res) => {
           isolamentos_virais: 0,
           obitos: 0,
         },
-        fonte: 'Casos Individuais Agregados',
+        acumulado: casosAcumulados, // Total acumulado para referência
+        fonte: 'Casos Individuais',
         data_publicacao: new Date(),
-        observacoes: null,
+        observacoes: `Casos da SE ${se} (não acumulado). Total acumulado até SE ${se}: ${casosAcumulados}`,
       },
     });
   } catch (error) {
